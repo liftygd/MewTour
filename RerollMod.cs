@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace RerollMod;
 
@@ -23,6 +24,9 @@ public class RerollMod : MewgenicsMod
 
     private Random random = new Random();
     private Server server = new Server();
+
+    private DraftSystem draft;
+
     private bool _runActive;
 
     Dictionary<string, List<string>> abilities = new Dictionary<string, List<string>>();
@@ -311,7 +315,11 @@ public class RerollMod : MewgenicsMod
     {
         log(Name + " loaded");
         loadGon();
-        
+
+        // Имя игрока берем из конфига. => Имя на сайте и имя в игре должно совпадать
+        string playerName = Config.GetString("playerName");
+        draft = new DraftSystem(playerName);
+
         GameEvents.OnKeyDown += OnKeyDown;
         GameEvents.OnAdventureStart += OnAdventureStart;
         GameEvents.OnAdventureReturn += OnAdventureReturn;
