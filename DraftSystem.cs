@@ -7,48 +7,36 @@ namespace RerollMod;
 
 public class DraftSystem
 {
-    private const string endpoint = "https://mewgenics-draft-system.hulore.workers.dev/api/lobbies/";
+    private const string endpoint = "https://mewgenics-draft-system.hulore.workers.dev/api/player-results";
 
     private HttpClient client = new HttpClient() { BaseAddress = new Uri(endpoint) };
     private string name;
 
     public DraftSystem(string playerName) { this.name = playerName; }
 
-    /**
-     * Возвращает id лобби по нику одного из игроков
-     */
-    private string findLobby()
+     /// Возвращает массив пикнутых классов. При ошибке возвращает пустой массив.
+     /// БЕЗКЛАССОВЫЙ НАЗЫВАЕТСЯ Collarless, А НЕ colorless!!!
+     /// 
+     /// <returns>
+     /// e.g. ["Butcher", "Hunter", "Necromancer", "Collarless", "Cleric"]
+     /// </returns>
+    public string[] getPickedClasses()
     {
-        return "S77Q28";
-    }
-
-    /**
-     * Возвращает массив пикнутых классов. При ошибке возвращает пустой массив.
-     * БЕЗКЛАССОВЫЙ НАЗЫВАЕТСЯ Collarless, А НЕ colorless!!!
-     * 
-     * <returns>
-     * Пример: ["Butcher", "Hunter", "Necromancer", "Collarless", "Cleric"]
-     * </returns>
-     */
-    public string?[] getPickedClasses()
-    {
-        string url = $"{findLobby()}/results";
+        string url = $"{endpoint}?name={Uri.EscapeDataString(name)}";
         HttpResponseMessage response = client.GetAsync(url).Result;
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return Array.Empty<string>();
+        }
 
         string jsonString = response.Content.ReadAsStringAsync().Result;
 
         using JsonDocument doc = JsonDocument.Parse(jsonString);
 
-        var players = doc.RootElement.GetProperty("players");
-
-        foreach (var player in players.EnumerateArray())
+        if (doc.RootElement.TryGetProperty("classes", out var classes))
         {
-            if (player.GetProperty("name").GetString() == name)
-            {
-                var classes = player.GetProperty("classes");
-                return classes.EnumerateArray().Select(c => c.GetString()).ToArray();
-            }
+            return classes.EnumerateArray().Select(c => c.GetString()).ToArray();
         }
 
         return Array.Empty<string>();

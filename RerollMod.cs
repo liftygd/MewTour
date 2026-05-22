@@ -7,7 +7,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace RerollMod;
 
@@ -316,10 +315,6 @@ public class RerollMod : MewgenicsMod
         log(Name + " loaded");
         loadGon();
 
-        // Имя игрока берем из конфига. => Имя на сайте и имя в игре должно совпадать
-        string playerName = Config.GetString("playerName");
-        draft = new DraftSystem(playerName);
-
         GameEvents.OnKeyDown += OnKeyDown;
         GameEvents.OnAdventureStart += OnAdventureStart;
         GameEvents.OnAdventureReturn += OnAdventureReturn;
@@ -450,6 +445,11 @@ public class RerollMod : MewgenicsMod
     protected override void OnEnable()
     {
         log(Name + " enabled");
+
+        // Имя игрока берем из конфига => Имя на сайте и имя в игре должно совпадать
+        string playerName = Config.GetString("playerName");
+        draft = new DraftSystem(playerName);
+        log("Draft System initialized");
     }
     
     protected override void OnDisable()
