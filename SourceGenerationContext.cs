@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace RerollMod;
+namespace MewTour;
 
 [JsonSourceGenerationOptions(WriteIndented = false)]
 [JsonSerializable(typeof(List<ServerConfig>))]

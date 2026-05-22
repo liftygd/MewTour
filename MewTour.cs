@@ -4,29 +4,37 @@ using MewgenicsModSdk.Game;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
+using MewUI;
+using MewUI.Core;
+using MewUI.Models;
+using MewUI.Rendering;
+using MewUI.Utility;
 
-namespace RerollMod;
+namespace MewTour;
 
-public class RerollMod : MewgenicsMod
+public class MewTour : MewgenicsMod
 {
-    public override string Id => "reroll_mod";
-    public override string Name => "Reroll";
+    public override string Id => "mew_tour";
+    public override string Name => "MewTour";
     public override string Version => "1.0.0";
-    public override string Description => "Does something cool.";
+    public override string Description => "Mewgenics local tournament mod.";
     public override string Category => "Gameplay";
 
-    bool logging = true;
-    public void log(string message) { if (logging) Log(message); }
+    public override bool AutoEnable => Config.GetBool("IsActive", true);
+    protected static bool IsActive;
 
     private Random random = new Random();
     private Server server = new Server();
     private bool _runActive;
+    private TextureDrawable? _catRollButton = null;
 
     Dictionary<string, List<string>> abilities = new Dictionary<string, List<string>>();
     Dictionary<string, List<string>> passives = new Dictionary<string, List<string>>();
+
+    public static MewTour Instance;
 
     private void loadGon()
     {
@@ -284,19 +292,19 @@ public class RerollMod : MewgenicsMod
 
     private string RandomSpell(string catClass)
     {
-        log("RandomSpell triggered");
-        log($"CatClass: {catClass}");
+        Logger.Log("RandomSpell triggered");
+        Logger.Log($"CatClass: {catClass}");
         string abil = abilities[catClass][random.Next(abilities[catClass].Count)];
-        log(abil);
+        Logger.Log(abil);
         return abil;
     }
 
     private string RandomPassive(string catClass)
     {
-        log("RandomPassive triggered");
-        log($"CatClass: {catClass}");
+        Logger.Log("RandomPassive triggered");
+        Logger.Log($"CatClass: {catClass}");
         string passive = passives[catClass][random.Next(passives[catClass].Count)];
-        log(passive);
+        Logger.Log(passive);
         return passive;
     }
     
@@ -309,29 +317,54 @@ public class RerollMod : MewgenicsMod
 
     protected override void OnLoad()
     {
-        log(Name + " loaded");
-        loadGon();
-        
-        GameEvents.OnKeyDown += OnKeyDown;
-        GameEvents.OnAdventureStart += OnAdventureStart;
-        GameEvents.OnAdventureReturn += OnAdventureReturn;
-        GameEvents.OnFightStart += OnFightStart;
-        GameEvents.OnFightEnd += OnFightEnd;
-        GameEvents.OnHouseUpdate += OnHouseUpdate;
-        
-        _runActive = Config.GetBool("runActive");
-        Config.GetInt("rerollCount", 0);
-        Config.GetString("playerId", Guid.NewGuid().ToString());
-        Config.GetString("playerName", RandomString(5));
-        Config.GetString("server", string.Empty);
-        Config.GetString("key", string.Empty);
-        
-        server.ActivateClient(Config);
-    }
+        try
+        {
+            Logger.ClearLog();
+            Logger.Log(Name + " loaded");
 
+            Instance = this;
+            loadGon();
+
+            GameEvents.OnKeyDown += OnKeyDown;
+            GameEvents.OnAdventureStart += OnAdventureStart;
+            GameEvents.OnAdventureReturn += OnAdventureReturn;
+            GameEvents.OnFightStart += OnFightStart;
+            GameEvents.OnFightEnd += OnFightEnd;
+            GameEvents.OnHouseUpdate += OnHouseUpdate;
+
+            _runActive = Config.GetBool("runActive");
+            Config.GetString("playerId", Guid.NewGuid().ToString());
+            Config.GetString("playerName", RandomString(5));
+            Config.GetString("server", string.Empty);
+            Config.GetString("key", string.Empty);
+
+            server.ActivateClient(Config);
+            
+            MewUI.Utility.Logger.Logging = false;
+            MewUI.MewUI.Initialize(Assembly.GetExecutingAssembly());
+
+            // RVA Hooks
+            unsafe
+            {
+                // Cat changed on cat select screen
+                _catSelectScreenHook = Hook(
+                    0xDFC70,
+                    (nint) (delegate* unmanaged<nint, nint, nint, void>) &CatSelectScreenHook);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Error while trying to load MewTour: {ex.Message}. {ex.InnerException?.Message}");
+        }
+    }
+    
     private void OnHouseUpdate(HouseUpdateEvent @event)
     {
         if (!IsEnabled) return;
+        
+        if (_catRollButton != null)
+            RemoveRollButton();
+        
         if (!_runActive) return;
 
         EndRun();
@@ -340,7 +373,7 @@ public class RerollMod : MewgenicsMod
     private void OnFightStart(FightStartEvent @event)
     {
         if (!IsEnabled) return;
-        log("OnFightStart");
+        Logger.Log("OnFightStart");
         
         UpdateCats();
     }
@@ -348,7 +381,7 @@ public class RerollMod : MewgenicsMod
     private void OnFightEnd(FightEndEvent @event)
     {
         if (!IsEnabled) return;
-        log("OnFightEnd");
+        Logger.Log("OnFightEnd");
 
         if (@event.Result != FightResult.Lose) 
             return;
@@ -359,7 +392,7 @@ public class RerollMod : MewgenicsMod
     private void OnAdventureReturn(AdventureReturnEvent @event)
     {
         if (!IsEnabled) return;
-        log("OnAdventureReturn");
+        Logger.Log("OnAdventureReturn");
         
         EndRun();
     }
@@ -367,7 +400,7 @@ public class RerollMod : MewgenicsMod
     private void OnAdventureStart(AdventureStartEvent @event)
     {
         if (!IsEnabled) return;
-        log("OnAdventureStart");
+        Logger.Log("OnAdventureStart");
 
         var cats = GetAdventureCats();
         foreach (var cat in cats)
@@ -382,21 +415,55 @@ public class RerollMod : MewgenicsMod
         UpdateCats();
     }
 
+    public void DrawRollButton(int catId)
+    {
+        if (_catRollButton != null)
+            RemoveRollButton();
+
+        if (_runActive)
+            return;
+        
+        GameChar? cat = GetAdventureCats()
+            .Where(c => c.CatId == catId)
+            .FirstOrDefault();
+
+        if (cat == null)
+            return;
+        
+        _catRollButton = UIManager.Instance.CreateButtonFromResource(
+            id: "button_roll",
+            resourceName: Assembly.GetExecutingAssembly().PathToResourceName("UI/Roll.png"),
+            layout: RelativeRect.FromReference(800, 600, 96, 96),
+            onClick: _ => RollCat(cat.Value)
+        );
+
+        _catRollButton.HighlightOnHover = true;
+        _catRollButton.HoverHighlightStrength = 0.75f;
+    }
+
+    public void RemoveRollButton()
+    {
+        UIManager.Instance.RemoveDrawable("button_roll");
+        _catRollButton = null;
+    }
+
     private void StartRun()
     {
         if (_runActive) return;
         
-        log("Started run");
+        Logger.Log("Started run");
         
         _runActive = true;
         Config.Set("runActive", _runActive);
+        
+        RemoveRollButton();
     }
     
     private void EndRun()
     {
         if (!_runActive) return;
         
-        log("Ended run");
+        Logger.Log("Ended run");
         
         _runActive = false;
         Config.Set("runActive", _runActive);
@@ -441,12 +508,20 @@ public class RerollMod : MewgenicsMod
 
     protected override void OnEnable()
     {
-        log(Name + " enabled");
+        Logger.Log(Name + " enabled");
+        IsActive = true;
+        Config.Set("IsActive", IsActive);
+        
+        MewUI.MewUI.Enable();
     }
     
     protected override void OnDisable()
     {
-        log(Name + " disabled");
+        Logger.Log(Name + " disabled");
+        IsActive = false;
+        Config.Set("IsActive", IsActive);
+        
+        MewUI.MewUI.Disable();
     }
 
     private void RollCat(GameChar cat)
@@ -487,7 +562,7 @@ public class RerollMod : MewgenicsMod
             Guid.Parse(Config.GetString("playerId")),
             cat);
         
-        log(call);
+        Logger.Log(call);
         
         server.ActivateClient(Config);
         server.UpdateCat(call);
@@ -498,17 +573,29 @@ public class RerollMod : MewgenicsMod
         if (!IsEnabled) return;
         if ((e.Scancode == SDL_Scancode.P || e.Scancode == SDL_Scancode.O) && !e.IsRepeat)
         {
-            log($"🔵 [Reroll] Key {e.Key} pressed! (111 = O, 112 = P)");
+            Logger.Log($"🔵 [Reroll] Key {e.Key} pressed! (111 = O, 112 = P)");
             List<GameChar> cats = GetAdventureCats();
 
             if (e.Scancode == SDL_Scancode.O) RollCat(cats[0]);
             else if (e.Scancode == SDL_Scancode.P) RollCat(cats[1]);
         }
     }
-
+    
+    private static HookSlot _catSelectScreenHook;
+    [UnmanagedCallersOnly]
+    private static unsafe void CatSelectScreenHook(nint self, nint catId, nint arg3)
+    {
+        if (IsActive)
+        {
+            Instance.DrawRollButton(catId.ToInt32());
+        }
+        
+        _catSelectScreenHook.Invoke(self, catId, arg3);
+    }
+    
     internal static unsafe class Exports
     {
-        private static readonly RerollMod _mod = new();
+        private static readonly MewTour _mod = new();
 
         [UnmanagedCallersOnly(EntryPoint = "MewMod_GetInfo")]
         public static ModInfo* GetInfo() { try { return ModInfoHelper.GetInfo(_mod); } catch { return null; } }

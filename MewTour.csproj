@@ -14,5 +14,15 @@
 		<Reference Include="MewgenicsModSdk">
 			<HintPath>sdk\MewgenicsModSdk.dll</HintPath>
 		</Reference>
+
+        <Reference Include="MewUI">
+            <HintPath>UI\MewUI.dll</HintPath>
+        </Reference>
+        
+        <EmbeddedResource Include="UI\Roll.png" />
 	</ItemGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="StbImageSharp" Version="2.30.15" />
+    </ItemGroup>
 </Project>

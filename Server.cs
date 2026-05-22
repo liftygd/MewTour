@@ -5,7 +5,7 @@ using System.Text.Json;
 using MewgenicsModSdk;
 using MewgenicsModSdk.Game;
 
-namespace RerollMod;
+namespace MewTour;
 
 class Server()
 {

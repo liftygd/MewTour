@@ -1,4 +1,4 @@
-﻿namespace RerollMod;
+﻿namespace MewTour;
 
 public class ServerConfig
 {
