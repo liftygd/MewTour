@@ -2,6 +2,8 @@
 using System.Security.Cryptography;
 using System.Text;
 
+namespace MewTour.Utility;
+
 public class Encrypter
 {
     private static readonly byte[] Salt = Encoding.UTF8.GetBytes("5ba8d866031195e28cd8dbb4bc2ce5bc");

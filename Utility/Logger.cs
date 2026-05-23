@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace MewTour;
+namespace MewTour.Utility;
 
 public class Logger
 {

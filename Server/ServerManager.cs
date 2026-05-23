@@ -4,15 +4,25 @@ using System.Text;
 using System.Text.Json;
 using MewgenicsModSdk;
 using MewgenicsModSdk.Game;
+using MewTour.Abstract;
+using MewTour.Utility;
 
-namespace MewTour;
+namespace MewTour.Server;
 
-class Server()
+class ServerManager : Manager
 {
     private HttpClient? _client = null;
     private readonly Encrypter _encrypter = new Encrypter();
     private ServerConfig? _serverConfig;
 
+    public override void Configure(MewTour main, ModConfig config)
+    {
+        config.GetString("server", string.Empty);
+        config.GetString("key", string.Empty);
+        
+        ActivateClient(config);
+    }
+    
     public void ActivateClient(ModConfig config)
     {
         if (_client != null)
