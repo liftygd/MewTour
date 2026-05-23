@@ -3,7 +3,7 @@ using System.IO;
 
 namespace MewTour.Utility;
 
-public class Logger
+public class MewTourLogger
 {
     private static bool Logging = true;
     private static string LogFilePath => $"Logs/mewtour_logs/{DateTime.Now:yyyy-MM-dd}.log";

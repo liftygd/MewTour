@@ -64,7 +64,7 @@ public class SceneManager : Manager
                 _lastValue = finalValue;
                 _instance?.OnSceneChanged?.Invoke();
                 
-                Logger.Log($"Scene transition: {finalValue}");
+                MewTourLogger.Log($"Scene transition: {finalValue}");
             }
         }
         

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using MewgenicsModSdk;
@@ -6,7 +7,7 @@ using MewgenicsModSdk.Game;
 using MewTour.Abstract;
 using MewTour.Run;
 using MewTour.Scene;
-using MewUI.Core;
+using MewTour.Utility;
 using MewUI.Models;
 using MewUI.Utility;
 
@@ -54,14 +55,14 @@ public class RerollUI : IInjectable
         
         if (_sceneManager.GetCurrentScene() != SceneEnum.CatSelectionBeforeAdventure)
             return;
-        
-        GameChar? cat = _runManager.GetAdventureCats()
-            .Where(c => c.CatId == catId)
+
+        var cats = _runManager.GetAdventureCats();
+        GameChar? cat = cats.Where(c => c.CatId == catId)
             .FirstOrDefault();
         
-        if (cat == null)
+        if (cats.Count <= 0 || cat == null)
             return;
-
+        
         _uiManager.AddElement("button_roll", (manager) =>
         {
             var catRollButton = manager.CreateButtonFromResource(

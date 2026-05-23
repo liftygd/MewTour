@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using MewTour.Abstract;
-using Logger = MewTour.Utility.Logger;
+using MewTour.Utility;
 
 namespace MewTour;
 
@@ -33,8 +33,8 @@ public class MewTour : MewgenicsMod
     {
         try
         {
-            Logger.ClearLog();
-            Logger.Log(Name + " loaded");
+            MewTourLogger.ClearLog();
+            MewTourLogger.Log(Name + " loaded");
             
             Config.GetString("playerId", Guid.NewGuid().ToString());
             Config.GetString("playerName", RandomString(5));
@@ -44,7 +44,7 @@ public class MewTour : MewgenicsMod
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error while trying to load MewTour: {ex.Message}. {ex.InnerException?.Message}");
+            MewTourLogger.Log($"Error while trying to load MewTour: {ex.Message}. {ex.InnerException?.Message}");
         }
     }
 
@@ -52,7 +52,7 @@ public class MewTour : MewgenicsMod
 
     protected override void OnEnable()
     {
-        Logger.Log(Name + " enabled");
+        MewTourLogger.Log(Name + " enabled");
         IsActive = true;
         Config.Set("IsActive", IsActive);
         
@@ -61,7 +61,7 @@ public class MewTour : MewgenicsMod
     
     protected override void OnDisable()
     {
-        Logger.Log(Name + " disabled");
+        MewTourLogger.Log(Name + " disabled");
         IsActive = false;
         Config.Set("IsActive", IsActive);
         

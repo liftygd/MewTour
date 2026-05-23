@@ -46,19 +46,19 @@ public class RerollManager : Manager
 
     private string RandomSpell(string catClass)
     {
-        Logger.Log("RandomSpell triggered");
-        Logger.Log($"CatClass: {catClass}");
+        MewTourLogger.Log("RandomSpell triggered");
+        MewTourLogger.Log($"CatClass: {catClass}");
         string abil = _abilities[catClass][_random.Next(_abilities[catClass].Count)];
-        Logger.Log(abil);
+        MewTourLogger.Log(abil);
         return abil;
     }
 
     private string RandomPassive(string catClass)
     {
-        Logger.Log("RandomPassive triggered");
-        Logger.Log($"CatClass: {catClass}");
+        MewTourLogger.Log("RandomPassive triggered");
+        MewTourLogger.Log($"CatClass: {catClass}");
         string passive = _passives[catClass][_random.Next(_passives[catClass].Count)];
-        Logger.Log(passive);
+        MewTourLogger.Log(passive);
         return passive;
     }
     
@@ -100,7 +100,7 @@ public class RerollManager : Manager
             Guid.Parse(_config.GetString("playerId")),
             cat);
         
-        Logger.Log(call);
+        MewTourLogger.Log(call);
         
         _serverManager.ActivateClient(_config);
         _serverManager.UpdateCat(call);

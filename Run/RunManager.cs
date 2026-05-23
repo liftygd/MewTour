@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using MewgenicsModSdk;
 using MewgenicsModSdk.Game;
 using MewTour.Abstract;
@@ -48,7 +49,7 @@ public class RunManager : Manager
     private void OnFightStart(FightStartEvent @event)
     {
         if (!MewTour.IsActive) return;
-        Logger.Log("OnFightStart");
+        MewTourLogger.Log("OnFightStart");
         
         StartRun();
         OnFightStarted?.Invoke();
@@ -58,7 +59,7 @@ public class RunManager : Manager
     {
         if (!MewTour.IsActive) return;
         
-        Logger.Log("OnFightEnd");
+        MewTourLogger.Log("OnFightEnd");
         OnFightEnded?.Invoke();
 
         if (@event.Result != FightResult.Lose) 
@@ -70,7 +71,7 @@ public class RunManager : Manager
     private void OnAdventureReturn(AdventureReturnEvent @event)
     {
         if (!MewTour.IsActive) return;
-        Logger.Log("OnAdventureReturn");
+        MewTourLogger.Log("OnAdventureReturn");
         
         EndRun();
     }
@@ -79,7 +80,7 @@ public class RunManager : Manager
     {
         if (!MewTour.IsActive) return;
         
-        Logger.Log("OnAdventureStart");
+        MewTourLogger.Log("OnAdventureStart");
         StartRun();
     }
     
@@ -87,7 +88,7 @@ public class RunManager : Manager
     {
         if (RunActive) return;
         
-        Logger.Log("Started run");
+        MewTourLogger.Log("Started run");
         RunActive = true;
         OnRunStarted?.Invoke();
         
@@ -98,7 +99,7 @@ public class RunManager : Manager
     {
         if (!RunActive) return;
         
-        Logger.Log("Ended run");
+        MewTourLogger.Log("Ended run");
         RunActive = false;
         OnRunEnded?.Invoke();
         

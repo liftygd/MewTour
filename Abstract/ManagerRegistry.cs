@@ -35,7 +35,7 @@ public class ManagerRegistry : ILoader
 
     public void InitializeAll(MewTour main, ModConfig config)
     {
-        Logger.Log($"Initializing Manager registry. Managers found: {managers.Count}");
+        MewTourLogger.Log($"Initializing Manager registry. Managers found: {managers.Count}");
 
         var elementsToInject = managers.Select(m => (IInjectable)m).ToList();
         elementsToInject.AddRange(injectables);
@@ -46,10 +46,10 @@ public class ManagerRegistry : ILoader
             manager.Configure(main, config);
             _managers.Add(manager.GetType(), manager);
             
-            Logger.Log($"Initialized manager: {manager.GetType().Name}");
+            MewTourLogger.Log($"Initialized manager: {manager.GetType().Name}");
         }
         
-        Logger.Log("Manager registry initialized");
+        MewTourLogger.Log("Manager registry initialized");
         
         // Allow to get dependencies
         foreach (var injectable in elementsToInject)
@@ -57,7 +57,7 @@ public class ManagerRegistry : ILoader
             injectable.LoadDependencies(this);
         }
         
-        Logger.Log("Dependencies injected");
+        MewTourLogger.Log("Dependencies injected");
     }
 
     public T Get<T>() where T : Manager
