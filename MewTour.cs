@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using MewTour.Abstract;
 using MewTour.Utility;
+using MewTour.Draft;
 
 namespace MewTour;
 
@@ -19,6 +20,8 @@ public class MewTour : MewgenicsMod
     public override bool AutoEnable => Config.GetBool("IsActive", true);
     
     public static bool IsActive;
+
+    private DraftSystem draft = null!;
     
     private string RandomString(int length)
     {
@@ -57,6 +60,9 @@ public class MewTour : MewgenicsMod
         Config.Set("IsActive", IsActive);
         
         MewUI.MewUI.Enable();
+       
+        // playerName from config => name must be same as on Hulore's draft sys.
+        draft = new DraftSystem(Config.GetString("playerName"));
     }
     
     protected override void OnDisable()
