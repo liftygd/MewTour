@@ -15,6 +15,8 @@ public class DraftSystem
 
     public DraftSystem(string playerName) { this.name = playerName; }
 
+    /// Warning!
+    /// Cat without a class is named "Collarless", not "Colorless"
     public string[] getPickedClasses()
     {
         string url = $"{endpoint}?name={Uri.EscapeDataString(name)}";
