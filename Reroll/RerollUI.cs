@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -22,6 +23,12 @@ public class RerollUI : IInjectable
     
     private static RerollUI _instance;
     private static int _currentCatId;
+    
+    private static IntPtr? _moduleBase;
+    private static nint _uiPtr;
+    
+    private static HookSlot _catSelectScreenHook;
+    private static HookSlot _recomputeUIHook;
 
     public void LoadDependencies(ILoader loader)
     {
@@ -36,6 +43,7 @@ public class RerollUI : IInjectable
     public void Initialize(MewTour main)
     {
         _instance = this;
+        _moduleBase = Process.GetCurrentProcess().MainModule?.BaseAddress;
         
         // RVA Hooks
         unsafe
@@ -45,11 +53,20 @@ public class RerollUI : IInjectable
                 0xDFC70,
                 (nint) (delegate* unmanaged<nint, nint, nint, void>) &CatSelectScreenHook
             );
+            
+            // Recompute UI hook
+            _recomputeUIHook = main.Hook(
+                0xDFC70,
+                (nint) (delegate* unmanaged<nint, nint, void>) &RecomputeUIHook
+            );
         }
     }
     
     public void DrawRollButton(int catId)
     {
+        if (!MewTour.IsActive)
+            return;
+        
         if (_runManager.RunActive)
             return;
         
@@ -69,8 +86,17 @@ public class RerollUI : IInjectable
                 id: "button_roll",
                 resourceName: Assembly.GetExecutingAssembly().PathToResourceName("UI/Images/Roll.png"),
                 layout: RelativeRect.FromReference(800, 600, 96, 96),
-                onClick: _ => _rerollManager.RollCat(cat.Value)
-            );
+                onClick: _ =>
+                {
+                    unsafe
+                    {
+                        MewTourLogger.Log($"Rolling cat -> {_currentCatId}");
+                        _rerollManager.RollCat(cat.Value);
+                        
+                        if (_uiPtr != IntPtr.Zero)
+                            _recomputeUIHook.Invoke(_uiPtr, _currentCatId);
+                    }
+                });
             
             catRollButton.HighlightOnHover = true;
             catRollButton.HoverHighlightStrength = 0.75f;
@@ -79,16 +105,26 @@ public class RerollUI : IInjectable
         });
     }
     
-    private static HookSlot _catSelectScreenHook;
     [UnmanagedCallersOnly]
     private static unsafe void CatSelectScreenHook(nint self, nint catId, nint arg3)
     {
         if (MewTour.IsActive)
         {
             _currentCatId = catId.ToInt32();
+            MewTourLogger.Log($"Selected cat -> {_currentCatId}");
+
             _instance.DrawRollButton(_currentCatId);
         }
         
         _catSelectScreenHook.Invoke(self, catId, arg3);
+    }
+    
+    [UnmanagedCallersOnly]
+    private static unsafe void RecomputeUIHook(nint uiPtr, nint catId)
+    {
+        MewTourLogger.Log($"Recomputing UI -> {catId.ToInt32()}");
+        
+        _uiPtr = uiPtr;
+        _recomputeUIHook.Invoke(uiPtr, catId);
     }
 }

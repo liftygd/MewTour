@@ -86,7 +86,7 @@ public class RerollManager : Manager
         if (catNameComposite.Length >= 2 && Int32.TryParse(catNameComposite[1], out var roll))
             rollCount = roll + 1;
         
-        cat.Name = $"{_config.GetString("playerName")} | {rollCount}";
+        cat.Name = $"{catNameComposite[0]} | {rollCount}";
         
         _serverManager.ActivateClient(_config);
         _serverManager.RollCat(
@@ -120,7 +120,7 @@ public class RerollManager : Manager
             if (catNameComposite.Length >= 2 && Int32.TryParse(catNameComposite[1], out var roll))
                 rollCount = roll;
 
-            catName.Append($"{_config.GetString("playerName")} | {rollCount}");
+            catName.Append($"{catNameComposite[0]} | {rollCount}");
             
             cat.Name = catName.ToString();
             UpdateCatOnServer(cat);

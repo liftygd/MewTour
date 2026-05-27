@@ -21,6 +21,9 @@ public class MenuUI : IInjectable
 
     private void OnSceneChanged()
     {
+        if (!MewTour.IsActive)
+            return;
+        
         if (_sceneManager.GetCurrentScene() != SceneEnum.Menu)
             return;
         

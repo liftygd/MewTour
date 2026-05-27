@@ -24,13 +24,14 @@ public class SceneManager : Manager
         unsafe
         {
             // Scene changed
-            _sceneTransitionHook = main.Hook(
-                0x9A8E20,
-                (nint)(delegate* unmanaged<nint, nint, nint, void>)&SceneTransitionHook
+            _sceneUpdateHook = main.Hook(
+                0x9A5020,
+                (nint)(delegate* unmanaged<nint, nint, void>)&SceneUpdateHook
             );
         }
     }
 
+    // TODO: These numbers are clearly some world states. For example, if you are at home, it is 24. But if it is raining, it would be 6, conflicting with current logic.
     public SceneEnum GetCurrentScene()
     {
         switch (_lastValue)
@@ -46,9 +47,9 @@ public class SceneManager : Manager
         }
     }
     
-    private static HookSlot _sceneTransitionHook;
+    private static HookSlot _sceneUpdateHook;
     [UnmanagedCallersOnly]
-    private static unsafe void SceneTransitionHook(nint self, nint arg2, nint arg3)
+    private static unsafe void SceneUpdateHook(nint self, nint arg2)
     {
         if (MewTour.IsActive && _moduleBase != null)
         {
@@ -68,6 +69,6 @@ public class SceneManager : Manager
             }
         }
         
-        _sceneTransitionHook.Invoke(self, arg2, arg3);
+        _sceneUpdateHook.Invoke(self, arg2);
     }
 }

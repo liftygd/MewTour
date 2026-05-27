@@ -34,6 +34,9 @@ public class UIManager : Manager
 
     public Drawable? AddElement(string id, Func<MewUI.Core.UIManager, Drawable> builder)
     {
+        if (!MewTour.IsActive)
+            return null;
+        
         if (_uiElements.ContainsKey(id))
         {
             MewUI.Core.UIManager.Instance.RemoveDrawable(id);
