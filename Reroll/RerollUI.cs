@@ -23,12 +23,13 @@ public class RerollUI : IInjectable
     
     private static RerollUI _instance;
     private static int _currentCatId;
-    
-    private static IntPtr? _moduleBase;
     private static nint _uiPtr;
     
     private static HookSlot _catSelectScreenHook;
     private static HookSlot _recomputeUIHook;
+    private static HookSlot _renderFrameHook;
+
+    private static bool _uiRequiresRefresh;
 
     public void LoadDependencies(ILoader loader)
     {
@@ -43,7 +44,6 @@ public class RerollUI : IInjectable
     public void Initialize(MewTour main)
     {
         _instance = this;
-        _moduleBase = Process.GetCurrentProcess().MainModule?.BaseAddress;
         
         // RVA Hooks
         unsafe
@@ -59,6 +59,11 @@ public class RerollUI : IInjectable
                 0xDFC70,
                 (nint) (delegate* unmanaged<nint, nint, void>) &RecomputeUIHook
             );
+            
+            // Render frame hook
+            _renderFrameHook = main.Hook(
+                0xA34500,
+                (nint) (delegate* unmanaged<nint, void>) &RenderFrameHook);
         }
     }
     
@@ -92,9 +97,7 @@ public class RerollUI : IInjectable
                     {
                         MewTourLogger.Log($"Rolling cat -> {_currentCatId}");
                         _rerollManager.RollCat(cat.Value);
-                        
-                        if (_uiPtr != IntPtr.Zero)
-                            _recomputeUIHook.Invoke(_uiPtr, _currentCatId);
+                        _uiRequiresRefresh = true;
                     }
                 });
             
@@ -122,9 +125,24 @@ public class RerollUI : IInjectable
     [UnmanagedCallersOnly]
     private static unsafe void RecomputeUIHook(nint uiPtr, nint catId)
     {
-        MewTourLogger.Log($"Recomputing UI -> {catId.ToInt32()}");
-        
         _uiPtr = uiPtr;
         _recomputeUIHook.Invoke(uiPtr, catId);
+    }
+    
+    [UnmanagedCallersOnly]
+    private static unsafe void RenderFrameHook(nint self)
+    {
+        _renderFrameHook.Invoke(self);
+        
+        if (_uiRequiresRefresh)
+        {
+            _uiRequiresRefresh = false;
+            
+            if (_uiPtr != IntPtr.Zero)
+            {
+                MewTourLogger.Log($"Recomputing UI -> {_currentCatId}");
+                _recomputeUIHook.Invoke(_uiPtr, _currentCatId);
+            }
+        }
     }
 }

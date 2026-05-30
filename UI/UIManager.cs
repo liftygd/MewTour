@@ -5,7 +5,9 @@ using MewgenicsModSdk;
 using MewTour.Abstract;
 using MewTour.Run;
 using MewTour.Scene;
+using MewUI.Core;
 using MewUI.Rendering;
+using MewUI.Utility;
 
 namespace MewTour.UI;
 
@@ -18,7 +20,7 @@ public class UIManager : Manager
     
     public override void Configure(MewTour main, ModConfig config)
     {
-        MewUI.Utility.Logger.Logging = false;
+        MewUILogger.Logging = false;
         MewUI.MewUI.Initialize(Assembly.GetExecutingAssembly());
     }
 
@@ -32,18 +34,18 @@ public class UIManager : Manager
         _runManager.OnRunEnded += ClearUI;
     }
 
-    public Drawable? AddElement(string id, Func<MewUI.Core.UIManager, Drawable> builder)
+    public Drawable? AddElement(string id, Func<MewUIManager, Drawable> builder)
     {
         if (!MewTour.IsActive)
             return null;
         
         if (_uiElements.ContainsKey(id))
         {
-            MewUI.Core.UIManager.Instance.RemoveDrawable(id);
+            MewUIManager.Instance.RemoveDrawable(id);
             _uiElements.Remove(id);
         }
         
-        var drawable = builder?.Invoke(MewUI.Core.UIManager.Instance);
+        var drawable = builder?.Invoke(MewUIManager.Instance);
         if (drawable == null)
             return null;
         
@@ -53,11 +55,7 @@ public class UIManager : Manager
 
     public void ClearUI()
     {
-        foreach (var element in _uiElements)
-        {
-            MewUI.Core.UIManager.Instance.RemoveDrawable(element.Key);
-        }
-        
+        MewUI.MewUI.Clear();
         _uiElements.Clear();
     }
 }

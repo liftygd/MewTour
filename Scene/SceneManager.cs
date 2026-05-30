@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using MewgenicsModSdk;
 using MewTour.Abstract;
 using MewTour.Utility;
+using MewUI.Core;
 
 namespace MewTour.Scene;
 
@@ -64,6 +65,17 @@ public class SceneManager : Manager
             {
                 _lastValue = finalValue;
                 _instance?.OnSceneChanged?.Invoke();
+                
+                // Some ugly hacks for making custom UI blocked when in-game UI is above
+                switch (_lastValue)
+                {
+                    case 6:
+                        MewUIManager.CurrentMaxOrderForInputBlock = 30;
+                        break;
+                    default:
+                        MewUIManager.CurrentMaxOrderForInputBlock = 12;
+                        break;
+                }
                 
                 MewTourLogger.Log($"Scene transition: {finalValue}");
             }
