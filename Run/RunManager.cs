@@ -22,7 +22,7 @@ public class RunManager : Manager
     
     public override void Configure(MewTour main, ModConfig config)
     {
-        RunActive = config.GetBool("runActive");
+        RunActive = config.GetBool(ConfigVariables.RUN_ACTIVE);
         
         GameEvents.OnAdventureStart += OnAdventureStart;
         GameEvents.OnAdventureReturn += OnAdventureReturn;
@@ -33,14 +33,14 @@ public class RunManager : Manager
         _config = config;
     }
 
-    public override void LoadDependencies(ILoader loader)
+    public override void LoadDependencies(ILoader loader, ModConfig config)
     {
         _serverManager = loader.Get<Server.ServerManager>();
     }
 
     private void OnHouseUpdate(HouseUpdateEvent @event)
     {
-        if (!MewTour.IsActive) return;
+        if (!MewTour.Instance.IsActive) return;
         if (!RunActive) return;
 
         EndRun();
@@ -48,7 +48,7 @@ public class RunManager : Manager
     
     private void OnFightStart(FightStartEvent @event)
     {
-        if (!MewTour.IsActive) return;
+        if (!MewTour.Instance.IsActive) return;
         MewTourLogger.Log("OnFightStart");
         
         StartRun();
@@ -57,7 +57,7 @@ public class RunManager : Manager
     
     private void OnFightEnd(FightEndEvent @event)
     {
-        if (!MewTour.IsActive) return;
+        if (!MewTour.Instance.IsActive) return;
         
         MewTourLogger.Log("OnFightEnd");
         OnFightEnded?.Invoke();
@@ -70,7 +70,7 @@ public class RunManager : Manager
 
     private void OnAdventureReturn(AdventureReturnEvent @event)
     {
-        if (!MewTour.IsActive) return;
+        if (!MewTour.Instance.IsActive) return;
         MewTourLogger.Log("OnAdventureReturn");
         
         EndRun();
@@ -78,7 +78,7 @@ public class RunManager : Manager
 
     private void OnAdventureStart(AdventureStartEvent @event)
     {
-        if (!MewTour.IsActive) return;
+        if (!MewTour.Instance.IsActive) return;
         
         MewTourLogger.Log("OnAdventureStart");
         StartRun();
@@ -92,7 +92,7 @@ public class RunManager : Manager
         RunActive = true;
         OnRunStarted?.Invoke();
         
-        _config.Set("runActive", RunActive);
+        _config.Set(ConfigVariables.RUN_ACTIVE, RunActive);
     }
     
     private void EndRun()
@@ -103,10 +103,10 @@ public class RunManager : Manager
         RunActive = false;
         OnRunEnded?.Invoke();
         
-        _config.Set("runActive", RunActive);
+        _config.Set(ConfigVariables.RUN_ACTIVE, RunActive);
         
         _serverManager.ActivateClient(_config);
-        _serverManager.EndRun(Guid.Parse(_config.GetString("playerId")));
+        _serverManager.EndRun(Guid.Parse(_config.GetString(ConfigVariables.PLAYER_ID)));
     }
     
     public List<GameChar> GetAdventureCats()

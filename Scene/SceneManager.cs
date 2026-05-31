@@ -32,7 +32,7 @@ public class SceneManager : Manager
         }
     }
 
-    // TODO: These numbers are clearly some world states. For example, if you are at home, it is 24. But if it is raining, it would be 6, conflicting with current logic.
+    // These numbers are clearly some world states. For example, if you are at home, it is 24. But if it is raining, it would be 6, which could lead to conflicts.
     public SceneEnum GetCurrentScene()
     {
         switch (_lastValue)
@@ -52,7 +52,7 @@ public class SceneManager : Manager
     [UnmanagedCallersOnly]
     private static unsafe void SceneUpdateHook(nint self, nint arg2)
     {
-        if (MewTour.IsActive && _moduleBase != null)
+        if (_moduleBase != null)
         {
             IntPtr rbx = _moduleBase.Value + 0x12E60D0;
             

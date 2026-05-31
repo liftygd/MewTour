@@ -17,8 +17,8 @@ class ServerManager : Manager
 
     public override void Configure(MewTour main, ModConfig config)
     {
-        config.GetString("server", string.Empty);
-        config.GetString("key", string.Empty);
+        config.GetString(ConfigVariables.SERVER, string.Empty);
+        config.GetString(ConfigVariables.KEY, string.Empty);
         
         ActivateClient(config);
     }
@@ -28,8 +28,8 @@ class ServerManager : Manager
         if (_client != null)
             return;
         
-        var server = config.GetString("server", string.Empty);
-        var key = config.GetString("key", string.Empty);
+        var server = config.GetString(ConfigVariables.SERVER, string.Empty);
+        var key = config.GetString(ConfigVariables.KEY, string.Empty);
 
         if (string.IsNullOrEmpty(server) || string.IsNullOrEmpty(key))
             return;

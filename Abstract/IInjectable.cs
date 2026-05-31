@@ -1,6 +1,8 @@
-﻿namespace MewTour.Abstract;
+﻿using MewgenicsModSdk;
+
+namespace MewTour.Abstract;
 
 public interface IInjectable
 {
-    public void LoadDependencies(ILoader loader);
+    public void LoadDependencies(ILoader loader, ModConfig config);
 }

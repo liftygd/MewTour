@@ -54,7 +54,7 @@ public class ManagerRegistry : ILoader
         // Allow to get dependencies
         foreach (var injectable in elementsToInject)
         {
-            injectable.LoadDependencies(this);
+            injectable.LoadDependencies(this, config);
         }
         
         MewTourLogger.Log("Dependencies injected");

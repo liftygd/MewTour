@@ -34,11 +34,11 @@ public class RerollManager : Manager
         _rerollUi.Initialize(main);
     }
 
-    public override void LoadDependencies(ILoader loader)
+    public override void LoadDependencies(ILoader loader, ModConfig config)
     {
         _runManager = loader.Get<RunManager>();
         _serverManager = loader.Get<Server.ServerManager>();
-        _rerollUi.LoadDependencies(loader);
+        _rerollUi.LoadDependencies(loader, config);
         
         _runManager.OnRunStarted += UpdateCats;
         _runManager.OnFightStarted += UpdateCats;
@@ -90,14 +90,14 @@ public class RerollManager : Manager
         
         _serverManager.ActivateClient(_config);
         _serverManager.RollCat(
-            Guid.Parse(_config.GetString("playerId")),
+            Guid.Parse(_config.GetString(ConfigVariables.PLAYER_ID)),
             cat);
     }
     
     private void UpdateCatOnServer(GameChar cat)
     {
         string call = _serverManager.CreateCatState(
-            Guid.Parse(_config.GetString("playerId")),
+            Guid.Parse(_config.GetString(ConfigVariables.PLAYER_ID)),
             cat);
         
         MewTourLogger.Log(call);

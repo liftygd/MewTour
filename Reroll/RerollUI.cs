@@ -31,7 +31,7 @@ public class RerollUI : IInjectable
 
     private static bool _uiRequiresRefresh;
 
-    public void LoadDependencies(ILoader loader)
+    public void LoadDependencies(ILoader loader, ModConfig config)
     {
         _rerollManager = loader.Get<RerollManager>();
         _runManager = loader.Get<RunManager>();
@@ -69,7 +69,7 @@ public class RerollUI : IInjectable
     
     public void DrawRollButton(int catId)
     {
-        if (!MewTour.IsActive)
+        if (!MewTour.Instance.IsActive)
             return;
         
         if (_runManager.RunActive)
@@ -111,7 +111,7 @@ public class RerollUI : IInjectable
     [UnmanagedCallersOnly]
     private static unsafe void CatSelectScreenHook(nint self, nint catId, nint arg3)
     {
-        if (MewTour.IsActive)
+        if (MewTour.Instance.IsActive)
         {
             _currentCatId = catId.ToInt32();
             MewTourLogger.Log($"Selected cat -> {_currentCatId}");
@@ -125,7 +125,9 @@ public class RerollUI : IInjectable
     [UnmanagedCallersOnly]
     private static unsafe void RecomputeUIHook(nint uiPtr, nint catId)
     {
-        _uiPtr = uiPtr;
+        if (MewTour.Instance.IsActive)
+            _uiPtr = uiPtr;
+        
         _recomputeUIHook.Invoke(uiPtr, catId);
     }
     
@@ -134,7 +136,7 @@ public class RerollUI : IInjectable
     {
         _renderFrameHook.Invoke(self);
         
-        if (_uiRequiresRefresh)
+        if (MewTour.Instance.IsActive && _uiRequiresRefresh)
         {
             _uiRequiresRefresh = false;
             

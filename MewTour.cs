@@ -3,6 +3,7 @@ using MewgenicsModSdk.Api;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using MewgenicsModSdk.Game;
 using MewTour.Abstract;
 using MewTour.Utility;
 
@@ -16,9 +17,10 @@ public class MewTour : MewgenicsMod
     public override string Description => "Mewgenics local tournament mod.";
     public override string Category => "Gameplay";
 
-    public override bool AutoEnable => Config.GetBool("IsActive", true);
-    
-    public static bool IsActive;
+    public override bool AutoEnable => Config.GetBool(ConfigVariables.IS_ACTIVE, true);
+
+    public static MewTour Instance;
+    public bool IsActive;
     
     private string RandomString(int length)
     {
@@ -35,12 +37,19 @@ public class MewTour : MewgenicsMod
         {
             MewTourLogger.ClearLog();
             MewTourLogger.Log(Name + " loaded");
+            Instance = this;
             
-            Config.GetString("playerId", Guid.NewGuid().ToString());
-            Config.GetString("playerName", RandomString(5));
+            Config.GetString(ConfigVariables.PLAYER_ID, String.Empty);
+            Config.GetString(ConfigVariables.PLAYER_NAME, String.Empty);
+
+            Config.GetBool(ConfigVariables.UNLOCK_ACT_1, false);
+            Config.GetBool(ConfigVariables.UNLOCK_ACT_2, false);
+            Config.GetBool(ConfigVariables.UNLOCK_ACT_3, false);
+            Config.GetBool(ConfigVariables.UNLOCK_CLASSES, false);
             
             var managerRegistry = new ManagerRegistry();
             managerRegistry.InitializeAll(this, Config);
+            MewUI.MewUI.Enable();
         }
         catch (Exception ex)
         {
@@ -50,22 +59,21 @@ public class MewTour : MewgenicsMod
 
     public new HookSlot Hook(ulong rva, nint hookFn) => base.Hook(rva, hookFn);
 
+    public void Enable() => OnEnable();
+    public void Disable() => OnDisable();
+
     protected override void OnEnable()
     {
         MewTourLogger.Log(Name + " enabled");
         IsActive = true;
-        Config.Set("IsActive", IsActive);
-        
-        MewUI.MewUI.Enable();
+        Config.Set(ConfigVariables.IS_ACTIVE, IsActive);
     }
     
     protected override void OnDisable()
     {
         MewTourLogger.Log(Name + " disabled");
         IsActive = false;
-        Config.Set("IsActive", IsActive);
-        
-        MewUI.MewUI.Disable();
+        Config.Set(ConfigVariables.IS_ACTIVE, IsActive);
     }
     
     internal static unsafe class Exports
