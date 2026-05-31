@@ -99,7 +99,8 @@ public class RerollUI : IInjectable
                         _rerollManager.RollCat(cat.Value);
                         _uiRequiresRefresh = true;
                     }
-                });
+                }
+            );
             
             catRollButton.HighlightOnHover = true;
             catRollButton.HoverHighlightStrength = 0.75f;

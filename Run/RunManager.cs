@@ -106,7 +106,7 @@ public class RunManager : Manager
         _config.Set(ConfigVariables.RUN_ACTIVE, RunActive);
         
         _serverManager.ActivateClient(_config);
-        _serverManager.EndRun(Guid.Parse(_config.GetString(ConfigVariables.PLAYER_ID)));
+        _serverManager.EndRun(_config.GetString(ConfigVariables.PLAYER_ID));
     }
     
     public List<GameChar> GetAdventureCats()

@@ -70,8 +70,11 @@ class ServerManager : Manager
         return call;
     }
 
-    public string CreateCatState(Guid id, GameChar cat)
+    public string CreateCatState(string playerId, GameChar cat)
     {
+        if (!Guid.TryParse(playerId, out var id))
+            return string.Empty;
+        
         return CreateCatStateCall(id, cat.Name, cat.CatId, cat.ClassName, cat.Spell0, cat.Spell1, cat.Spell2, cat.Spell3,
             cat.Passive0, cat.Passive1, cat.Disorder0, cat.Disorder1);
     }
@@ -85,21 +88,27 @@ class ServerManager : Manager
         var task = _client.PostAsync("api/cat/update", content);
     }
 
-    public void EndRun(Guid playerId)
+    public void EndRun(string playerId)
     {
         if (_client == null  || _serverConfig == null)
             return;
         
-        var content = new StringContent($"{{\"id\":\"{playerId}\"}}", Encoding.UTF8, "application/json");
+        if (!Guid.TryParse(playerId, out var id))
+            return;
+        
+        var content = new StringContent($"{{\"id\":\"{id}\"}}", Encoding.UTF8, "application/json");
         var task = _client.PostAsync("api/run/end", content);
     }
 
-    public void RollCat(Guid playerId, GameChar cat)
+    public void RollCat(string playerId, GameChar cat)
     {
         if (_client == null  || _serverConfig == null)
             return;
+
+        if (!Guid.TryParse(playerId, out var id))
+            return;
         
-        var content = new StringContent($"{{\"id\":\"{playerId}\"," +
+        var content = new StringContent($"{{\"id\":\"{id}\"," +
                                         $"\"catName\":\"{cat.Name}\"," +
                                         $"\"catId\":\"{cat.CatId}\"," +
                                         $"\"className\":\"{cat.ClassName}\"}}", Encoding.UTF8, "application/json");
