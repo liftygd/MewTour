@@ -48,7 +48,12 @@ public class RerollManager : Manager
     {
         MewTourLogger.Log("RandomSpell triggered");
         MewTourLogger.Log($"CatClass: {catClass}");
-        string abil = _abilities[catClass][_random.Next(_abilities[catClass].Count)];
+
+        string key = catClass;
+        if (catClass == "jester")
+            key = _abilities.Keys.ElementAt(_random.Next(_abilities.Count));
+        
+        string abil = _abilities[key][_random.Next(_abilities[key].Count)];
         MewTourLogger.Log(abil);
         return abil;
     }
@@ -57,7 +62,12 @@ public class RerollManager : Manager
     {
         MewTourLogger.Log("RandomPassive triggered");
         MewTourLogger.Log($"CatClass: {catClass}");
-        string passive = _passives[catClass][_random.Next(_passives[catClass].Count)];
+        
+        string key = catClass;
+        if (catClass == "jester")
+            key = _passives.Keys.ElementAt(_random.Next(_passives.Count));
+        
+        string passive = _passives[key][_random.Next(_passives[key].Count)];
         MewTourLogger.Log(passive);
         return passive;
     }
