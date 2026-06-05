@@ -41,6 +41,8 @@ public class SceneManager : Manager
                 return SceneEnum.Menu;
             case 90:
                 return SceneEnum.SaveSelection;
+            case 24:
+                return SceneEnum.House;
             case 6:
                 return SceneEnum.CatSelectionBeforeAdventure;
             default:

@@ -5,5 +5,6 @@ public enum SceneEnum
     Unknown,
     Menu,
     SaveSelection,
+    House,
     CatSelectionBeforeAdventure
 }
