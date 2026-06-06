@@ -4,6 +4,7 @@ using System.Linq;
 using MewgenicsModSdk;
 using MewTour.Game.Class;
 using MewTour.Game.Director;
+using MewTour.Game.World;
 using MewTour.Menu;
 using MewTour.Reroll;
 using MewTour.Run;
@@ -26,14 +27,16 @@ public class ManagerRegistry : ILoader
         new RunManager(),
         new ServerManager(),
         new RerollManager(),
+        new MewDirector(),
         new ClassManager(),
-        new MewDirector()
+        new WorldManager()
     };
 
     private List<IInjectable> injectables = new ()
     {
         new MenuUI(),
-        new ClassUnlocker()
+        new ClassUnlocker(),
+        new WorldUnlocker()
     };
 
     public void InitializeAll(MewTour main, ModConfig config)

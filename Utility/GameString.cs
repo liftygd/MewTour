@@ -8,6 +8,9 @@ namespace MewTour.Utility;
 public unsafe struct GameString
 {
     [FieldOffset(0)]
+    public nint heapPtr;
+    
+    [FieldOffset(0)]
     public fixed byte inlineData[16];
     
     [FieldOffset(16)]
@@ -18,19 +21,32 @@ public unsafe struct GameString
     
     public static GameString FromManaged(string str)
     {
-        GameString gs = new GameString();
-        int length = Math.Min(str.Length, 15);
-        
-        // Write inline data
+        GameString gs = default;
         byte[] bytes = Encoding.ASCII.GetBytes(str);
-        for (int i = 0; i < bytes.Length && i < 16; i++)
+        gs.size = str.Length;
+        
+        if (str.Length <= 15)
         {
-            gs.inlineData[i] = bytes[i];
+            for (int i = 0; i < bytes.Length; i++)
+                gs.inlineData[i] = bytes[i];
+            gs.capacity = 15;
+        }
+        else
+        {
+            gs.heapPtr = Marshal.AllocHGlobal(bytes.Length + 1);
+            Marshal.Copy(bytes, 0, gs.heapPtr, bytes.Length);
+            Marshal.WriteByte(gs.heapPtr, bytes.Length, 0);
+            gs.capacity = bytes.Length;
         }
         
-        gs.size = length;
-        gs.capacity = 15;  // SSO capacity
-        
         return gs;
+    }
+    
+    public static void Free(ref GameString gs)
+    {
+        if (gs.capacity <= 15)
+            return;
+        
+        Marshal.FreeHGlobal(gs.heapPtr);
     }
 }

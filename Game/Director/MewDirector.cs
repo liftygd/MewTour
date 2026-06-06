@@ -15,12 +15,20 @@ public class MewDirector : Manager
         Initialize(main);
     }
 
-    public IntPtr? GetClassManager()
+    public IntPtr? GetMewDirector()
+    {
+        if (_mewDirector == IntPtr.Zero)
+            return null;
+
+        return _mewDirector;
+    }
+
+    public IntPtr? GetLockedContent()
     {
         if (_mewDirector == IntPtr.Zero)
             return null;
         
-        return _mewDirector.Value + 0x38;
+        return _mewDirector + 0x38;
     }
     
     private void Initialize(MewTour main)

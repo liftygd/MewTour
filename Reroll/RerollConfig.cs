@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using MewgenicsModSdk.Game;
 
 namespace MewTour.Reroll;
 
@@ -8,6 +9,8 @@ public class RerollConfig
         Dictionary<string, List<string>> abilities,
         Dictionary<string, List<string>> passives)
     {
+        new GameLockedContent();
+        
         abilities["fighter"] = [
             "Dash", "Spin", "FirePunch", "IcePunch", "ThunderPunch", "FurySwipes", "SideSlash", "FighterLeap",
             "Uppercut", "Counter", "TailWhip", "Poke", "Nip", "Push", "FalconPunch", "Exert", "Enrage", "Tumble",

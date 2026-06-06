@@ -16,8 +16,8 @@ public class ClassManager : Manager
     private IntPtr? _moduleBase;
     private IntPtr? _fapoBase;
 
-    private const int AvailableClassesVec = 0xC0;
-    private const int ChangedFlag = 0x328;
+    private const int AvailableClassesVecOffset = 0xC0;
+    private const int ChangedFlagOffset = 0x328;
     
     public override void Configure(MewTour main, ModConfig config)
     {
@@ -44,12 +44,18 @@ public class ClassManager : Manager
         }
     }
     
+    [UnmanagedCallersOnly]
+    private static unsafe void ClassUnlockHook(nint classManager, nint className)
+    {
+        _classUnlockHook.Invoke(classManager, className);
+    }
+    
     public void UnlockClass(string className)
     {
         MewTourLogger.Log($"Trying to unlock class: {className}");
         
-        var classManager = _mewDirector.GetClassManager();
-        if (classManager == null)
+        var lockedContent = _mewDirector.GetLockedContent();
+        if (lockedContent == null)
             return;
         
         unsafe
@@ -57,15 +63,15 @@ public class ClassManager : Manager
             GameString gameString = GameString.FromManaged(className);
             nint ptr = (nint)(&gameString);
             
-            _classUnlockHook.Invoke(classManager.Value, ptr);
+            _classUnlockHook.Invoke(lockedContent.Value, ptr);
             MewTourLogger.Log($"Unlocked class: {className}");
         }
     }
     
     public void ClearAllClasses()
     {
-        var classManager = _mewDirector.GetClassManager();
-        if (classManager == null || 
+        var lockedContent = _mewDirector.GetLockedContent();
+        if (lockedContent == null || 
             _fapoBase == null)
             return;
         
@@ -73,8 +79,8 @@ public class ClassManager : Manager
         
         unsafe
         {
-            IntPtr classManagerPtr = classManager.Value;
-            IntPtr vecPtr = classManagerPtr + AvailableClassesVec;
+            IntPtr lockedContentPtr = lockedContent.Value;
+            IntPtr vecPtr = lockedContentPtr + AvailableClassesVecOffset;
             
             IntPtr begin = *(IntPtr*)vecPtr;
             IntPtr end = *(IntPtr*)(vecPtr + 8);
@@ -90,15 +96,9 @@ public class ClassManager : Manager
             *(IntPtr*)(vecPtr + 8) = begin;
             
             // Set changed flag
-            *(byte*)(classManagerPtr + ChangedFlag) = 1;
+            *(byte*)(lockedContentPtr + ChangedFlagOffset) = 1;
             
             MewTourLogger.Log("Cleared all unlocked classes");
         }
-    }
-    
-    [UnmanagedCallersOnly]
-    private static unsafe void ClassUnlockHook(nint classManager, nint className)
-    {
-        _classUnlockHook.Invoke(classManager, className);
     }
 }

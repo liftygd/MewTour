@@ -198,17 +198,17 @@ public class ConfigUI
                 MewTour.Instance.Enable();
         });
         
-        DrawCheckBox(ConfigVariables.UNLOCK_ACT_1, "Открыть весь 1 Акт", new Vector2(1330, 300), configTabGroup, (isChecked) =>
+        DrawCheckBox(ConfigVariables.UNLOCK_ACT_1, "Открыть 1 Акт + Пустыня", new Vector2(1330, 300), configTabGroup, (isChecked) =>
         {
             _config.Set(ConfigVariables.UNLOCK_ACT_1, isChecked);
         });
         
-        DrawCheckBox(ConfigVariables.UNLOCK_ACT_2, "Открыть весь 2 Акт", new Vector2(1330, 350), configTabGroup, (isChecked) =>
+        DrawCheckBox(ConfigVariables.UNLOCK_ACT_2, "Открыть 2 Акт + Лаб.", new Vector2(1330, 350), configTabGroup, (isChecked) =>
         {
             _config.Set(ConfigVariables.UNLOCK_ACT_2, isChecked);
         });
         
-        DrawCheckBox(ConfigVariables.UNLOCK_ACT_3, "Открыть весь 3 Акт", new Vector2(1330, 400), configTabGroup, (isChecked) =>
+        DrawCheckBox(ConfigVariables.UNLOCK_ACT_3, "Открыть 3 Акт", new Vector2(1330, 400), configTabGroup, (isChecked) =>
         {
             _config.Set(ConfigVariables.UNLOCK_ACT_3, isChecked);
         });
