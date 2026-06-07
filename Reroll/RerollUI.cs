@@ -75,7 +75,9 @@ public class RerollUI : IInjectable
         if (_runManager.RunActive)
             return;
         
-        if (_sceneManager.GetCurrentScene() != SceneEnum.CatSelectionBeforeAdventure)
+        if (_sceneManager.CurrentScene != SceneEnum.InventoryScreen2 ||
+            (_sceneManager.PreviousScene != SceneEnum.ClassSelection &&
+             _sceneManager.PreviousScene != SceneEnum.SaveSelection))
             return;
 
         var cats = _runManager.GetAdventureCats();
@@ -112,22 +114,36 @@ public class RerollUI : IInjectable
     [UnmanagedCallersOnly]
     private static unsafe void CatSelectScreenHook(nint self, nint catId, nint arg3)
     {
-        if (MewTour.Instance.IsActive)
+        try
         {
-            _currentCatId = catId.ToInt32();
-            MewTourLogger.Log($"Selected cat -> {_currentCatId}");
+            if (MewTour.Instance.IsActive)
+            {
+                _currentCatId = catId.ToInt32();
+                MewTourLogger.Log($"Selected cat -> {_currentCatId}");
 
-            _instance.DrawRollButton(_currentCatId);
+                _instance.DrawRollButton(_currentCatId);
+            }
         }
-        
+        catch
+        {
+            // ignored
+        }
+
         _catSelectScreenHook.Invoke(self, catId, arg3);
     }
     
     [UnmanagedCallersOnly]
     private static unsafe void RecomputeUIHook(nint uiPtr, nint catId)
     {
-        if (MewTour.Instance.IsActive)
-            _uiPtr = uiPtr;
+        try
+        {
+            if (MewTour.Instance.IsActive)
+                _uiPtr = uiPtr;
+        }
+        catch
+        {
+            // ignored
+        }
         
         _recomputeUIHook.Invoke(uiPtr, catId);
     }
@@ -136,16 +152,23 @@ public class RerollUI : IInjectable
     private static unsafe void RenderFrameHook(nint self)
     {
         _renderFrameHook.Invoke(self);
-        
-        if (MewTour.Instance.IsActive && _uiRequiresRefresh)
+
+        try
         {
-            _uiRequiresRefresh = false;
-            
-            if (_uiPtr != IntPtr.Zero)
+            if (MewTour.Instance.IsActive && _uiRequiresRefresh)
             {
-                MewTourLogger.Log($"Recomputing UI -> {_currentCatId}");
-                _recomputeUIHook.Invoke(_uiPtr, _currentCatId);
+                _uiRequiresRefresh = false;
+
+                if (_uiPtr != IntPtr.Zero)
+                {
+                    MewTourLogger.Log($"Recomputing UI -> {_currentCatId}");
+                    _recomputeUIHook.Invoke(_uiPtr, _currentCatId);
+                }
             }
+        }
+        catch
+        {
+            // ignored
         }
     }
 }

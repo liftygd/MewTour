@@ -3,18 +3,17 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using MewgenicsModSdk;
 using MewTour.Abstract;
+using MewTour.Game.Director;
 using MewTour.Utility;
 
 namespace MewTour.Game.World;
 
 public class WorldManager : Manager
 {
+    private MewDirector _mewDirector;
     private static HookSlot _mapFlagUnlockHook;
     
     private IntPtr? _moduleBase;
-    
-    private const int MapGenManagerRva = 0x13C7BD0;
-    private const int HashMapOffset = 0x38;
     private const int NodeValueOffset = 0x30;
     
     [StructLayout(LayoutKind.Sequential)]
@@ -28,6 +27,11 @@ public class WorldManager : Manager
     {
         _moduleBase = Process.GetCurrentProcess().MainModule?.BaseAddress;
         Initialize(main);
+    }
+
+    public override void LoadDependencies(ILoader loader, ModConfig config)
+    {
+        _mewDirector = loader.Get<MewDirector>();
     }
 
     private void Initialize(MewTour main)
@@ -55,18 +59,15 @@ public class WorldManager : Manager
         if (_moduleBase == null)
             return;
 
-        IntPtr mapGenManager = Marshal.ReadIntPtr(_moduleBase.Value + MapGenManagerRva);
-        if (mapGenManager == IntPtr.Zero)
-        {
-            MewTourLogger.Log("MapGen manager not initialized");
+        var lockedContent = _mewDirector.GetLockedContent();
+        if (lockedContent == null)
             return;
-        }
         
         string mapFlag = $"mapflag_{mapName}Unlocked";
         
         unsafe
         {
-            nint hashMapContainer = mapGenManager + HashMapOffset;
+            nint hashMapContainer = lockedContent.Value;
             GameString gameString = GameString.FromManaged(mapFlag);
             nint keyPtr = (nint)(&gameString);
             

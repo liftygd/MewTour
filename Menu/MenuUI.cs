@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using MewgenicsModSdk;
 using MewTour.Abstract;
+using MewTour.Run;
 using MewTour.Scene;
 using MewTour.UI;
 using MewUI.Models;
@@ -13,22 +14,20 @@ public class MenuUI : IInjectable
     private UIManager _uiManager;
     private SceneManager _sceneManager;
     private ConfigUI _configUi;
-    private ModConfig _config;
 
     public void LoadDependencies(ILoader loader, ModConfig config)
     {
         _uiManager = loader.Get<UIManager>();
+        
         _sceneManager = loader.Get<SceneManager>();
-        
-        _configUi = new ConfigUI(_uiManager, config);   
-        _config = config;
-        
         _sceneManager.OnSceneChanged += OnSceneChanged;
+        
+        _configUi = new ConfigUI(_uiManager, config); 
     }
 
     private void OnSceneChanged()
     {
-        if (_sceneManager.GetCurrentScene() != SceneEnum.Menu)
+        if (_sceneManager.CurrentScene != SceneEnum.Menu)
             return;
 
         if (MewTour.Instance.IsActive)

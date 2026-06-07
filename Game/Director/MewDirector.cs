@@ -46,8 +46,15 @@ public class MewDirector : Manager
     [UnmanagedCallersOnly]
     private static unsafe void MewDirectorHook(nint mewDirector)
     {
-        if (MewTour.Instance.IsActive)
-            _mewDirector = mewDirector;
+        try
+        {
+            if (MewTour.Instance.IsActive)
+                _mewDirector = mewDirector;
+        }
+        catch
+        {
+            // ignored
+        }
         
         _mewDirectorHook.Invoke(mewDirector);
     }

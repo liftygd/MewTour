@@ -10,6 +10,7 @@ namespace MewTour.Game.World;
 public class WorldUnlocker : IInjectable
 {
     private WorldManager _worldManager;
+    private SceneManager _sceneManager;
     private ModConfig _config;
     
     private bool _refresh = true;
@@ -36,29 +37,17 @@ public class WorldUnlocker : IInjectable
     
     public void LoadDependencies(ILoader loader, ModConfig config)
     {
-        var sceneManager = loader.Get<SceneManager>();
-        sceneManager.OnSceneChanged += () => _refresh = true;
+        _sceneManager = loader.Get<SceneManager>();
+        _sceneManager.OnSceneChanged += UnlockWorlds;
         
         _worldManager = loader.Get<WorldManager>();
         _config = config;
-
-        GameEvents.OnHouseUpdate += HouseUpdate;
-    }
-
-    private void HouseUpdate(HouseUpdateEvent houseUpdateEvent)
-    {
-        if (!MewTour.Instance.IsActive)
-            return;
-        
-        if (!_refresh)
-            return;
-        
-        UnlockWorlds();
     }
 
     private void UnlockWorlds()
     {
-        _refresh = false;
+        if (_sceneManager.CurrentScene != SceneEnum.House)
+            return;
 
         if (_config.GetBool(ConfigVariables.UNLOCK_ACT_1))
             UnlockAct(in _act1);

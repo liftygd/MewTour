@@ -6,5 +6,8 @@ public enum SceneEnum
     Menu,
     SaveSelection,
     House,
-    CatSelectionBeforeAdventure
+    Interstitial,
+    ClassSelection,
+    InventoryScreen2,
+    ActSelection
 }

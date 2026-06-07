@@ -10,6 +10,7 @@ namespace MewTour.Game.Class;
 public class ClassUnlocker : IInjectable
 {
     private ClassManager _classManager;
+    private SceneManager _sceneManager;
     private ModConfig _config;
     
     private bool _refresh = true;
@@ -24,29 +25,17 @@ public class ClassUnlocker : IInjectable
     
     public void LoadDependencies(ILoader loader, ModConfig config)
     {
-        var sceneManager = loader.Get<SceneManager>();
-        sceneManager.OnSceneChanged += () => _refresh = true;
+        _sceneManager = loader.Get<SceneManager>();
+        _sceneManager.OnSceneChanged += RefreshClasses;
         
         _classManager = loader.Get<ClassManager>();
         _config = config;
-
-        GameEvents.OnHouseUpdate += HouseUpdate;
-    }
-
-    private void HouseUpdate(HouseUpdateEvent houseUpdateEvent)
-    {
-        if (!MewTour.Instance.IsActive)
-            return;
-        
-        if (!_refresh)
-            return;
-        
-        RefreshClasses();
     }
 
     private void RefreshClasses()
     {
-        _refresh = false;
+        if (_sceneManager.CurrentScene != SceneEnum.House)
+            return;
 
         if (!_config.GetBool(ConfigVariables.UNLOCK_CLASSES))
             return;
