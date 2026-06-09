@@ -8,12 +8,10 @@
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<SelfContained>true</SelfContained>
 		<SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-
-        <OptimizationPreference>Speed</OptimizationPreference>
-        <DebugType>portable</DebugType>
-        <DebugSymbols>true</DebugSymbols>
-        <StripSymbols>false</StripSymbols>
-        <TrimMode>partial</TrimMode>
+        
+        <DebugType>none</DebugType>
+        <DebugSymbols>false</DebugSymbols>
+        <StripSymbols>true</StripSymbols>
 
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
         <AssemblyName>MewTour</AssemblyName>
