@@ -12,8 +12,6 @@ public class WorldUnlocker : IInjectable
     private WorldManager _worldManager;
     private SceneManager _sceneManager;
     private ModConfig _config;
-    
-    private bool _refresh = true;
 
     // All act 1 + start act 2
     private readonly List<string> _act1 = new List<string>

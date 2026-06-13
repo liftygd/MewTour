@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using MewgenicsModSdk;
-using MewgenicsModSdk.Game;
 using MewTour.Abstract;
+using MewTour.Game.Director;
 using MewTour.Scene;
+using MewTour.Server;
 using MewTour.Utility;
 
 namespace MewTour.Game.Class;
@@ -10,10 +12,9 @@ namespace MewTour.Game.Class;
 public class ClassUnlocker : IInjectable
 {
     private ClassManager _classManager;
-    private SceneManager _sceneManager;
+    private ServerManager _serverManager;
+    private MewDirector _mewDirector;
     private ModConfig _config;
-    
-    private bool _refresh = true;
 
     private readonly List<string> _classes = new List<string>
     {
@@ -25,23 +26,29 @@ public class ClassUnlocker : IInjectable
     
     public void LoadDependencies(ILoader loader, ModConfig config)
     {
-        _sceneManager = loader.Get<SceneManager>();
-        _sceneManager.OnSceneChanged += RefreshClasses;
+        _mewDirector = loader.Get<MewDirector>();
+        _mewDirector.OnLockedContentRebuild += RefreshClasses;
         
         _classManager = loader.Get<ClassManager>();
+        _serverManager = loader.Get<ServerManager>();
         _config = config;
     }
 
-    private void RefreshClasses()
+    private async void RefreshClasses()
     {
-        if (_sceneManager.CurrentScene != SceneEnum.House)
-            return;
-
         if (!_config.GetBool(ConfigVariables.UNLOCK_CLASSES))
             return;
         
+        await Task.Delay(1000);
+        
+        var draftResults = await _serverManager.GetDraftResults();
+        var classesToUnlock = _classes;
+
+        if (draftResults.Count > 0)
+            classesToUnlock = draftResults;
+        
         _classManager.ClearAllClasses();
-        foreach (var className in _classes)
+        foreach (var className in classesToUnlock)
             _classManager.UnlockClass(className);
     }
 }

@@ -259,7 +259,7 @@ public class ConfigUI
         var body = MewUIManager.Instance.CreateEmbeddedTexture(
             id: "config_tab_server_body",
             resourceName: Assembly.GetExecutingAssembly().PathToResourceName("UI/Images/Box_Big.png"),
-            layout: RelativeRect.FromReference(1300, 200, 512, 320)
+            layout: RelativeRect.FromReference(1300, 200, 512, 350)
         );
         
         var configTabGroup = new DrawableGroup("config_group_tab_server", new Rectangle(0, 0, 1024, 720));
@@ -407,6 +407,7 @@ public class ConfigUI
     {
         var username = "";
         var authResult = "";
+        var error = "";
 
         if (!string.IsNullOrEmpty(_serverManager.Username))
         {
@@ -414,8 +415,12 @@ public class ConfigUI
 
             if (string.IsNullOrEmpty(_serverManager.AuthError))
                 authResult = "Авторизация успешна";
-            else
-                authResult = $"Ошибка авторизации: {_serverManager.AuthError}";
+        }
+
+        if (!string.IsNullOrEmpty(_serverManager.AuthError))
+        {
+            authResult = $"Ошибка авторизации.";
+            error = _serverManager.AuthError;
         }
 
         var text = MewUIManager.Instance.CreateText(
@@ -426,7 +431,21 @@ public class ConfigUI
             Color.Black,
             font: "opsilon"
         );
-        
+
         group.AddChild(text);
+        
+        if (!string.IsNullOrEmpty(error))
+        {
+            var errorText = MewUIManager.Instance.CreateText(
+                id: "config_tab_server_sync_error",
+                text: $"{error}",
+                layout: RelativeRect.FromReference(1330, 500, 440, 96),
+                size: 24f,
+                Color.Black,
+                font: "opsilon"
+            );
+            
+            group.AddChild(errorText);
+        }
     }
 }

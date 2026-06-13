@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -94,7 +95,7 @@ public class ServerManager : Manager
         var content = new StringContent($"{{\"username\":\"{payload.username}\", " +
                                         $"\"password\":\"{payload.password}\"}}", Encoding.UTF8, "application/json");
         
-        HttpResponseMessage response = await SendServerRequest("api/auth/login", content);
+        HttpResponseMessage response = await SendServerRequest(HttpMethod.Post, "api/auth/login", content);
 
         if (response.IsSuccessStatusCode)
         {
@@ -134,9 +135,12 @@ public class ServerManager : Manager
         else
         {
             string errorBody = await response.Content.ReadAsStringAsync();
+            var errorResult = JsonSerializer.Deserialize(
+                errorBody,
+                SourceGenerationContext.Default.ErrorModel);
 
             Username = null;
-            AuthError = errorBody;
+            AuthError = errorResult?.Message;
             
             OnAuthCompleted?.Invoke(AuthError);
         }
@@ -169,7 +173,7 @@ public class ServerManager : Manager
             return;
         
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        _ = SendServerRequest("api/cat/update", content);
+        _ = SendServerRequest(HttpMethod.Post, "api/cat/update", content);
     }
 
     public void EndRun()
@@ -178,7 +182,7 @@ public class ServerManager : Manager
             return;
         
         var content = new StringContent("", Encoding.UTF8, "application/json");
-        _ = SendServerRequest("api/run/end", content);
+        _ = SendServerRequest(HttpMethod.Post, "api/run/end", content);
     }
 
     public void RollCat(GameChar cat)
@@ -190,30 +194,69 @@ public class ServerManager : Manager
                                         $"\"catId\":\"{cat.CatId}\"," +
                                         $"\"className\":\"{cat.ClassName}\"}}", Encoding.UTF8, "application/json");
         
-        _ = SendServerRequest("api/cat/roll", content);
+        _ = SendServerRequest(HttpMethod.Post, "api/cat/roll", content);
     }
 
-    private async Task<HttpResponseMessage> SendServerRequest(string? requestUri, StringContent? content)
+    public async Task<List<string>> GetDraftResults()
+    {
+        var draftResults = new List<string>();
+
+        if (_client == null)
+            return draftResults;
+        
+        var content = new StringContent("", Encoding.UTF8, "application/json");
+        var response = await SendServerRequest(HttpMethod.Get, "api/match/draft", content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            string responseBody = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize(
+                responseBody,
+                SourceGenerationContext.Default.ListString);
+
+            draftResults = result ?? draftResults;
+            return draftResults;
+        }
+        else
+            return draftResults;
+    }
+
+    private async Task<HttpResponseMessage> SendServerRequest(HttpMethod method, string requestUri, StringContent content)
     {
         if (_client == null)
             return new HttpResponseMessage();
-        
-        MewTourLogger.Log($"Sending request to server: {requestUri}");
-        
-        HttpResponseMessage response = await _client.PostAsync(requestUri, content);
-        
-        MewTourLogger.Log($"Request status: {(int) response.StatusCode} {response.StatusCode}");
-        
-        if (response.IsSuccessStatusCode)
-        {
-            MewTourLogger.Log("Request sent successfully.");
-        }
-        else
-        {
-            string errorBody = await response.Content.ReadAsStringAsync();
-            MewTourLogger.Log($"Request error: {errorBody}");
-        }
 
-        return response;
+        MewTourLogger.Log($"Sending request to server: {method} {requestUri}");
+        
+        try
+        {
+            var request = new HttpRequestMessage
+            {
+                Method = method,
+                RequestUri = new Uri(_client.BaseAddress + requestUri),
+                Content = content
+            };
+            
+            HttpResponseMessage response = await _client.SendAsync(request);
+            
+            MewTourLogger.Log($"Request status: {(int) response.StatusCode} {response.StatusCode}");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                MewTourLogger.Log("Request sent successfully.");
+            }
+            else
+            {
+                string errorBody = await response.Content.ReadAsStringAsync();
+                MewTourLogger.Log($"Request error: {errorBody}");
+            }
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            MewTourLogger.Log($"Request exception: {ex.Message}");
+            return new HttpResponseMessage();
+        }
     }
 }

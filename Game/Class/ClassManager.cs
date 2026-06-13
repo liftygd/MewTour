@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using MewgenicsModSdk;
+using MewgenicsModSdk.Game;
 using MewTour.Abstract;
 using MewTour.Game.Director;
 using MewTour.Utility;
@@ -11,6 +13,7 @@ namespace MewTour.Game.Class;
 public class ClassManager : Manager
 {
     private static HookSlot _classUnlockHook;
+    
     private MewDirector _mewDirector;
     
     private IntPtr? _moduleBase;
@@ -81,24 +84,25 @@ public class ClassManager : Manager
         {
             IntPtr lockedContentPtr = lockedContent.Value;
             IntPtr vecPtr = lockedContentPtr + AvailableClassesVecOffset;
-            
-            IntPtr begin = *(IntPtr*)vecPtr;
-            IntPtr end = *(IntPtr*)(vecPtr + 8);
-            
-            // Clear memory
+
+            IntPtr begin   = *(IntPtr*)(vecPtr + 0x00);
+            IntPtr current = *(IntPtr*)(vecPtr + 0x08);
+
             var destructor = (delegate* unmanaged<IntPtr, void>)(_fapoBase.Value + 0x17E0);
-            for (IntPtr ptr = begin; ptr < end; ptr += 32)
+
+            for (IntPtr ptr = begin; ptr < current; ptr += 32)
             {
                 destructor(ptr);
+
+                // optional safety
+                Unsafe.InitBlockUnaligned((void*)ptr, 0, 32);
             }
-            
-            // Reset vector to empty (set end = begin)
-            *(IntPtr*)(vecPtr + 8) = begin;
-            
-            // Set changed flag
+
+            // reset size
+            *(IntPtr*)(vecPtr + 0x08) = begin;
+
+            // mark changed
             *(byte*)(lockedContentPtr + ChangedFlagOffset) = 1;
-            
-            MewTourLogger.Log("Cleared all unlocked classes");
         }
     }
 }
