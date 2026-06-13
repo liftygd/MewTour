@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Reflection;
 using MewgenicsModSdk;
+using MewTour.Server;
 using MewTour.UI;
 using MewTour.Utility;
 using MewUI.Core;
@@ -21,6 +22,7 @@ public class ConfigUI
     
     private ModConfig _config;
     private UIManager _uiManager;
+    private ServerManager _serverManager;
     
     private bool _isConfigOpen;
 
@@ -29,9 +31,10 @@ public class ConfigUI
 
     private ConfigTab _currentTab = ConfigTab.Config;
 
-    public ConfigUI(UIManager manager, ModConfig config)
+    public ConfigUI(UIManager manager, ServerManager serverManager, ModConfig config)
     {
         _uiManager = manager;
+        _serverManager = serverManager;
         _config = config;
     }
 
@@ -262,13 +265,15 @@ public class ConfigUI
         var configTabGroup = new DrawableGroup("config_group_tab_server", new Rectangle(0, 0, 1024, 720));
         configTabGroup.AddChild(body);
 
-        DrawInputField(configTabGroup);
+        DrawKeyInputField(configTabGroup);
+        DrawPasswordInputField(configTabGroup);
         DrawSync(configTabGroup);
+        DrawAuthResult(configTabGroup);
         
         _configGroup?.AddChild(configTabGroup);
     }
 
-    private void DrawInputField(DrawableGroup group)
+    private void DrawKeyInputField(DrawableGroup group)
     {
         var headerText = MewUIManager.Instance.CreateText(
             id: "config_tab_server_header",
@@ -321,19 +326,74 @@ public class ConfigUI
         group.AddChild(keyInput);
         group.AddChild(keyClear);
     }
+    
+    private void DrawPasswordInputField(DrawableGroup group)
+    {
+        var headerText = MewUIManager.Instance.CreateText(
+            id: "config_tab_server_password_header",
+            text: "Пароль",
+            layout: RelativeRect.FromReference(1330, 315, 400, 96),
+            size: 32f,
+            Color.Black,
+            font: "opsilon"
+        );
+        
+        var keyBackground = MewUIManager.Instance.CreateEmbeddedTexture(
+            id: "config_tab_server_password_input_background",
+            resourceName: Assembly.GetExecutingAssembly().PathToResourceName("UI/Images/Box_Big.png"),
+            layout: RelativeRect.FromReference(1330, 345, 400, 48),
+            tint: Color.FromHex("#121212")
+        );
+
+        var keyInput = MewUIManager.Instance.CreateInputField(
+            id: "config_tab_server_password_input_field",
+            layout: RelativeRect.FromReference(1330, 345, 400, 48),
+            placeholder: "Введите пароль...",
+            fontSize: 24f,
+            textColor: Color.White,
+            backgroundColor: Color.Transparent,
+            font: "opsilon"
+        );
+        
+        var keyClear = MewUIManager.Instance.CreateButtonFromResource(
+            id: "config_tab_server_password_input_clear",
+            resourceName: Assembly.GetExecutingAssembly().PathToResourceName("UI/Images/Clear.png"),
+            layout: RelativeRect.FromReference(1750, 345, 36, 48),
+            onClick: @event =>
+            {
+                _config.Set(ConfigVariables.KEY, "");
+                keyInput.SetText(String.Empty);
+            }
+        );
+        
+        var currentKey = _config.GetString(ConfigVariables.KEY);
+        if (!string.IsNullOrEmpty(currentKey))
+            keyInput.SetText(currentKey);
+        
+        keyInput.CaretColor = Color.White;
+        keyInput.BorderColor = Color.Transparent;
+        keyInput.FocusedBorderColor = Color.Transparent;
+        keyInput.TextChanged += (input, text) => _config.Set(ConfigVariables.KEY, text);
+        
+        group.AddChild(headerText);
+        group.AddChild(keyBackground);
+        group.AddChild(keyInput);
+        group.AddChild(keyClear);
+    }
 
     private void DrawSync(DrawableGroup group)
     {
         var button = MewUIManager.Instance.CreateButtonFromResource(
             id: "config_tab_server_sync_button",
             resourceName: Assembly.GetExecutingAssembly().PathToResourceName("UI/Images/Sync.png"),
-            layout: RelativeRect.FromReference(1330, 330, 54, 54)
+            layout: RelativeRect.FromReference(1330, 400, 54, 54),
+            onClick: _ => _serverManager.ActivateClient(_config, true)
         );
         
         var buttonText = MewUIManager.Instance.CreateText(
             id: "config_tab_server_sync_text",
             text: "Провести синхронизацию",
-            layout: RelativeRect.FromReference(1400, 340, 440, 96),
+            layout: RelativeRect.FromReference(1400, 410, 440, 96),
             size: 32f,
             Color.Black,
             font: "opsilon"
@@ -341,5 +401,32 @@ public class ConfigUI
         
         group.AddChild(button);
         group.AddChild(buttonText);
+    }
+    
+    private void DrawAuthResult(DrawableGroup group)
+    {
+        var username = "";
+        var authResult = "";
+
+        if (!string.IsNullOrEmpty(_serverManager.Username))
+        {
+            username = $"Игрок: {_serverManager.Username}.";
+
+            if (string.IsNullOrEmpty(_serverManager.AuthError))
+                authResult = "Авторизация успешна";
+            else
+                authResult = $"Ошибка авторизации: {_serverManager.AuthError}";
+        }
+
+        var text = MewUIManager.Instance.CreateText(
+            id: "config_tab_server_sync_result",
+            text: $"{username} {authResult}",
+            layout: RelativeRect.FromReference(1330, 470, 440, 96),
+            size: 24f,
+            Color.Black,
+            font: "opsilon"
+        );
+        
+        group.AddChild(text);
     }
 }

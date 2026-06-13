@@ -3,6 +3,7 @@ using MewgenicsModSdk;
 using MewTour.Abstract;
 using MewTour.Run;
 using MewTour.Scene;
+using MewTour.Server;
 using MewTour.UI;
 using MewUI.Models;
 using MewUI.Utility;
@@ -13,16 +14,21 @@ public class MenuUI : IInjectable
 {
     private UIManager _uiManager;
     private SceneManager _sceneManager;
+    private ServerManager _serverManager;
     private ConfigUI _configUi;
 
     public void LoadDependencies(ILoader loader, ModConfig config)
     {
         _uiManager = loader.Get<UIManager>();
         
+        _serverManager = loader.Get<ServerManager>();
+        _serverManager.OnAuthStarted += OnSceneChanged;
+        _serverManager.OnAuthCompleted += _ => OnSceneChanged();
+        
         _sceneManager = loader.Get<SceneManager>();
         _sceneManager.OnSceneChanged += OnSceneChanged;
         
-        _configUi = new ConfigUI(_uiManager, config); 
+        _configUi = new ConfigUI(_uiManager, _serverManager, config); 
     }
 
     private void OnSceneChanged()

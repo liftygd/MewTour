@@ -99,16 +99,12 @@ public class RerollManager : Manager
         cat.Name = $"{catNameComposite[0]} | {rollCount}";
         
         _serverManager.ActivateClient(_config);
-        _serverManager.RollCat(
-            _config.GetString(ConfigVariables.PLAYER_ID),
-            cat);
+        _serverManager.RollCat(cat);
     }
     
     private void UpdateCatOnServer(GameChar cat)
     {
-        string call = _serverManager.CreateCatState(
-            _config.GetString(ConfigVariables.PLAYER_ID),
-            cat);
+        string call = _serverManager.CreateCatState(cat);
         
         MewTourLogger.Log(call);
         

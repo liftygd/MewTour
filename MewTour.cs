@@ -38,9 +38,6 @@ public class MewTour : MewgenicsMod
             MewTourLogger.ClearLog();
             MewTourLogger.Log(Name + " loaded");
             Instance = this;
-            
-            Config.GetString(ConfigVariables.PLAYER_ID, String.Empty);
-            Config.GetString(ConfigVariables.PLAYER_NAME, String.Empty);
 
             Config.GetBool(ConfigVariables.UNLOCK_ACT_1, false);
             Config.GetBool(ConfigVariables.UNLOCK_ACT_2, false);

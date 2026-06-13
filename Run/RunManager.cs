@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using MewgenicsModSdk;
 using MewgenicsModSdk.Game;
 using MewTour.Abstract;
+using MewTour.Scene;
+using MewTour.Server;
 using MewTour.Utility;
 
 namespace MewTour.Run;
@@ -18,7 +19,8 @@ public class RunManager : Manager
     public bool RunActive { get; private set; }
 
     private ModConfig _config;
-    private Server.ServerManager _serverManager;
+    private ServerManager _serverManager;
+    private SceneManager _sceneManager;
     
     public override void Configure(MewTour main, ModConfig config)
     {
@@ -35,7 +37,22 @@ public class RunManager : Manager
 
     public override void LoadDependencies(ILoader loader, ModConfig config)
     {
-        _serverManager = loader.Get<Server.ServerManager>();
+        _serverManager = loader.Get<ServerManager>();
+
+        _sceneManager = loader.Get<SceneManager>();
+        _sceneManager.OnSceneChanged += SceneChanged;
+    }
+
+    private void SceneChanged()
+    {
+        if (_sceneManager.CurrentScene != SceneEnum.Menu &&
+            _sceneManager.CurrentScene != SceneEnum.SaveSelection)
+            return;
+
+        if (!RunActive)
+            return;
+        
+        EndRun();
     }
 
     private void OnHouseUpdate(HouseUpdateEvent @event)
@@ -51,7 +68,7 @@ public class RunManager : Manager
         if (!MewTour.Instance.IsActive) return;
         MewTourLogger.Log("OnFightStart");
         
-        StartRun();
+        StartRun(false);
         OnFightStarted?.Invoke();
     }
     
@@ -84,13 +101,15 @@ public class RunManager : Manager
         StartRun();
     }
     
-    private void StartRun()
+    private void StartRun(bool callEvent = true)
     {
         if (RunActive) return;
         
         MewTourLogger.Log("Started run");
         RunActive = true;
-        OnRunStarted?.Invoke();
+        
+        if (callEvent)
+            OnRunStarted?.Invoke();
         
         _config.Set(ConfigVariables.RUN_ACTIVE, RunActive);
     }
@@ -106,7 +125,7 @@ public class RunManager : Manager
         _config.Set(ConfigVariables.RUN_ACTIVE, RunActive);
         
         _serverManager.ActivateClient(_config);
-        _serverManager.EndRun(_config.GetString(ConfigVariables.PLAYER_ID));
+        _serverManager.EndRun();
     }
     
     public List<GameChar> GetAdventureCats()

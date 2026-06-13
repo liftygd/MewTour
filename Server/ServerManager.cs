@@ -1,7 +1,10 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using MewgenicsModSdk;
 using MewgenicsModSdk.Game;
 using MewTour.Abstract;
@@ -9,11 +12,16 @@ using MewTour.Utility;
 
 namespace MewTour.Server;
 
-class ServerManager : Manager
+public class ServerManager : Manager
 {
+    public Action OnAuthStarted;
+    public Action<string?> OnAuthCompleted;
+    
     private HttpClient? _client = null;
-    private readonly Encrypter _encrypter = new Encrypter();
     private ServerConfig? _serverConfig;
+    
+    public string? Username { get; private set; }
+    public string? AuthError { get; private set; }
 
     public override void Configure(MewTour main, ModConfig config)
     {
@@ -23,45 +31,124 @@ class ServerManager : Manager
         ActivateClient(config);
     }
     
-    public void ActivateClient(ModConfig config)
+    public void ActivateClient(ModConfig config, bool reset = false)
     {
-        if (_client != null)
+        if (_client != null &&
+            !reset)
             return;
+
+        Username = null;
+        AuthError = null;
+        _client = null;
+        
+        OnAuthStarted?.Invoke();
         
         var server = config.GetString(ConfigVariables.SERVER, string.Empty);
         var key = config.GetString(ConfigVariables.KEY, string.Empty);
 
         if (string.IsNullOrEmpty(server) || string.IsNullOrEmpty(key))
+        {
+            AuthError = "Не заданы параметры.";
+            OnAuthCompleted?.Invoke(AuthError);
             return;
+        }
         
-        var serverConfigString = _encrypter.Decrypt(server, key);
-        if (string.IsNullOrEmpty(serverConfigString))
-            return;
+        byte[] bytes = Convert.FromBase64String(server);
+        using var stream = new MemoryStream(bytes);
 
         _serverConfig = JsonSerializer.Deserialize(
-            serverConfigString,
+            stream,
             SourceGenerationContext.Default.ServerConfig);
-        
+
         if (_serverConfig == null ||
-            string.IsNullOrEmpty(_serverConfig.IpAddress) ||
-            string.IsNullOrEmpty(_serverConfig.ApiKey))
+            string.IsNullOrEmpty(_serverConfig.Address))
+        {
+            AuthError = "Передан некорректный ключ игрока.";
+            OnAuthCompleted?.Invoke(AuthError);
             return;
+        }
         
         _client = new HttpClient
         {
-            BaseAddress = new Uri(_serverConfig.IpAddress)
+            BaseAddress = new Uri(_serverConfig.Address)
         };
         
-        _client.DefaultRequestHeaders.Add("X-Api-Key", _serverConfig.ApiKey);
+        Task.Run(() => TryAuth(key));
     }
 
-    private string CreateCatStateCall(Guid id, string catName, long catId, string className,
+    private async Task TryAuth(string password)
+    {
+        if (_serverConfig == null ||
+            _client == null)
+        {
+            OnAuthCompleted?.Invoke("Не найден конфиг сервера.");
+            return;
+        }
+        
+        var payload = new
+        {
+            username = _serverConfig.Username,
+            password = password
+        };
+        
+        var content = new StringContent($"{{\"username\":\"{payload.username}\", " +
+                                        $"\"password\":\"{payload.password}\"}}", Encoding.UTF8, "application/json");
+        
+        HttpResponseMessage response = await SendServerRequest("api/auth/login", content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Username = payload.username;
+            AuthError = null;
+
+            try
+            {
+                string responseBody = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize(
+                    responseBody,
+                    SourceGenerationContext.Default.AuthModel);
+
+                if (result != null)
+                {
+                    _client.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
+
+                    MewTourLogger.Log($"Authorized successfully, token: {result.Token}, username: {result.Username}");
+
+                    OnAuthCompleted?.Invoke(null);
+                }
+                else
+                {
+                    AuthError = "Не удалось десериализовать данные.";
+                    OnAuthCompleted?.Invoke(AuthError);
+                }
+            }
+            catch (Exception ex)
+            {
+                MewTourLogger.Log($"Auth error: {ex.Message}");
+                
+                AuthError = ex.Message;
+                OnAuthCompleted?.Invoke(AuthError);
+            }
+        }
+        else
+        {
+            string errorBody = await response.Content.ReadAsStringAsync();
+
+            Username = null;
+            AuthError = errorBody;
+            
+            OnAuthCompleted?.Invoke(AuthError);
+        }
+    }
+
+    private string CreateCatStateCall(bool isLiveAndValid, string catName, long catId, string className,
         string spell0, string spell1, string spell2, string spell3,
         string passive0, string passive1, string disorder0, string disorder1)
     {
         string? ToJsonValue(string? value) => string.IsNullOrEmpty(value) ? null : $"\"{value}\"";
 
-        string call = $"{{\"id\":\"{id}\",\"catName\":\"{catName}\",\"catId\":\"{catId}\",\"className\":\"{className}\"," +
+        string call = $"{{\"isLiveAndValid\":{isLiveAndValid.ToString().ToLower()},\"catName\":\"{catName}\",\"catId\":{catId},\"className\":\"{className}\"," +
                       $"\"abilities\":[{{\"id\":1,\"name\":{ToJsonValue(spell0)}}},{{\"id\":2,\"name\":{ToJsonValue(spell1)}}}," +
                       $"{{\"id\":3,\"name\":{ToJsonValue(spell2)}}},{{\"id\":4,\"name\":{ToJsonValue(spell3)}}}]," +
                       $"\"passives\":[{{\"id\":1,\"name\":{ToJsonValue(passive0)}}},{{\"id\":2,\"name\":{ToJsonValue(passive1)}}}]," +
@@ -70,49 +157,63 @@ class ServerManager : Manager
         return call;
     }
 
-    public string CreateCatState(string playerId, GameChar cat)
+    public string CreateCatState(GameChar cat)
     {
-        if (!Guid.TryParse(playerId, out var id))
-            return string.Empty;
-        
-        return CreateCatStateCall(id, cat.Name, cat.CatId, cat.ClassName, cat.Spell0, cat.Spell1, cat.Spell2, cat.Spell3,
+        return CreateCatStateCall(cat.IsLiveAndValid, cat.Name, cat.CatId, cat.ClassName, cat.Spell0, cat.Spell1, cat.Spell2, cat.Spell3,
             cat.Passive0, cat.Passive1, cat.Disorder0, cat.Disorder1);
     }
 
     public void UpdateCat(string json)
     {
-        if (_client == null || _serverConfig == null)
+        if (_client == null)
             return;
         
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var task = _client.PostAsync("api/cat/update", content);
+        _ = SendServerRequest("api/cat/update", content);
     }
 
-    public void EndRun(string playerId)
+    public void EndRun()
     {
-        if (_client == null  || _serverConfig == null)
+        if (_client == null)
             return;
         
-        if (!Guid.TryParse(playerId, out var id))
-            return;
-        
-        var content = new StringContent($"{{\"id\":\"{id}\"}}", Encoding.UTF8, "application/json");
-        var task = _client.PostAsync("api/run/end", content);
+        var content = new StringContent("", Encoding.UTF8, "application/json");
+        _ = SendServerRequest("api/run/end", content);
     }
 
-    public void RollCat(string playerId, GameChar cat)
+    public void RollCat(GameChar cat)
     {
-        if (_client == null  || _serverConfig == null)
-            return;
-
-        if (!Guid.TryParse(playerId, out var id))
+        if (_client == null)
             return;
         
-        var content = new StringContent($"{{\"id\":\"{id}\"," +
-                                        $"\"catName\":\"{cat.Name}\"," +
+        var content = new StringContent($"{{\"catName\":\"{cat.Name}\"," +
                                         $"\"catId\":\"{cat.CatId}\"," +
                                         $"\"className\":\"{cat.ClassName}\"}}", Encoding.UTF8, "application/json");
         
-        var task = _client.PostAsync("api/cat/roll", content);
+        _ = SendServerRequest("api/cat/roll", content);
+    }
+
+    private async Task<HttpResponseMessage> SendServerRequest(string? requestUri, StringContent? content)
+    {
+        if (_client == null)
+            return new HttpResponseMessage();
+        
+        MewTourLogger.Log($"Sending request to server: {requestUri}");
+        
+        HttpResponseMessage response = await _client.PostAsync(requestUri, content);
+        
+        MewTourLogger.Log($"Request status: {(int) response.StatusCode} {response.StatusCode}");
+        
+        if (response.IsSuccessStatusCode)
+        {
+            MewTourLogger.Log("Request sent successfully.");
+        }
+        else
+        {
+            string errorBody = await response.Content.ReadAsStringAsync();
+            MewTourLogger.Log($"Request error: {errorBody}");
+        }
+
+        return response;
     }
 }
