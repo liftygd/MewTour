@@ -20,7 +20,6 @@ public class RunManager : Manager
 
     private ModConfig _config;
     private ServerManager _serverManager;
-    private SceneManager _sceneManager;
     
     public override void Configure(MewTour main, ModConfig config)
     {
@@ -38,21 +37,6 @@ public class RunManager : Manager
     public override void LoadDependencies(ILoader loader, ModConfig config)
     {
         _serverManager = loader.Get<ServerManager>();
-
-        _sceneManager = loader.Get<SceneManager>();
-        _sceneManager.OnSceneChanged += SceneChanged;
-    }
-
-    private void SceneChanged()
-    {
-        if (_sceneManager.CurrentScene != SceneEnum.Menu &&
-            _sceneManager.CurrentScene != SceneEnum.SaveSelection)
-            return;
-
-        if (!RunActive)
-            return;
-        
-        EndRun();
     }
 
     private void OnHouseUpdate(HouseUpdateEvent @event)
