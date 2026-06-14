@@ -39,6 +39,8 @@ public class RerollUI : IInjectable
         _sceneManager = loader.Get<SceneManager>();
 
         _sceneManager.OnSceneChanged += () => DrawRollButton(_currentCatId);
+
+        GameEvents.OnKeyDown += RollKey;
     }
 
     public void Initialize(MewTour main)
@@ -66,25 +68,49 @@ public class RerollUI : IInjectable
                 (nint) (delegate* unmanaged<nint, void>) &RenderFrameHook);
         }
     }
-    
-    public void DrawRollButton(int catId)
+
+    private void RollKey(KeyEventArgs e)
     {
-        if (!MewTour.Instance.IsActive)
+        var cat = GetCurrentCat(_currentCatId);
+        if (cat == null)
             return;
         
+        switch (e.Scancode)
+        {
+            case SDL_Scancode.O:
+                _rerollManager.RollCat(cat.Value);
+                _uiRequiresRefresh = true;
+                break;
+        }
+    }
+
+    private GameChar? GetCurrentCat(int catId)
+    {
+        if (!MewTour.Instance.IsActive)
+            return null;
+        
         if (_runManager.RunActive)
-            return;
+            return null;
         
         if (_sceneManager.CurrentScene != SceneEnum.InventoryScreen2 ||
             (_sceneManager.PreviousScene != SceneEnum.ClassSelection &&
              _sceneManager.PreviousScene != SceneEnum.SaveSelection))
-            return;
+            return null;
 
         var cats = _runManager.GetAdventureCats();
         GameChar? cat = cats.Where(c => c.CatId == catId)
             .FirstOrDefault();
         
         if (cats.Count <= 0 || cat == null)
+            return null;
+
+        return cat;
+    }
+    
+    public void DrawRollButton(int catId)
+    {
+        var cat = GetCurrentCat(catId);
+        if (cat == null)
             return;
         
         _uiManager.AddElement("button_roll", (manager) =>
