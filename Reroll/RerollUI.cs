@@ -26,7 +26,6 @@ public class RerollUI : IInjectable
     private static nint _uiPtr;
     
     private static HookSlot _catSelectScreenHook;
-    private static HookSlot _recomputeUIHook;
     private static HookSlot _renderFrameHook;
 
     private static bool _uiRequiresRefresh;
@@ -54,12 +53,6 @@ public class RerollUI : IInjectable
             _catSelectScreenHook = main.Hook(
                 0xDFC70,
                 (nint) (delegate* unmanaged<nint, nint, nint, void>) &CatSelectScreenHook
-            );
-            
-            // Recompute UI hook
-            _recomputeUIHook = main.Hook(
-                0xDFC70,
-                (nint) (delegate* unmanaged<nint, nint, void>) &RecomputeUIHook
             );
             
             // Render frame hook
@@ -138,12 +131,13 @@ public class RerollUI : IInjectable
     }
     
     [UnmanagedCallersOnly]
-    private static unsafe void CatSelectScreenHook(nint self, nint catId, nint arg3)
+    private static unsafe void CatSelectScreenHook(nint uiPtr, nint catId, nint arg3)
     {
         try
         {
             if (MewTour.Instance.IsActive)
             {
+                _uiPtr = uiPtr;
                 _currentCatId = catId.ToInt32();
                 MewTourLogger.Log($"Selected cat -> {_currentCatId}");
 
@@ -155,23 +149,7 @@ public class RerollUI : IInjectable
             // ignored
         }
 
-        _catSelectScreenHook.Invoke(self, catId, arg3);
-    }
-    
-    [UnmanagedCallersOnly]
-    private static unsafe void RecomputeUIHook(nint uiPtr, nint catId)
-    {
-        try
-        {
-            if (MewTour.Instance.IsActive)
-                _uiPtr = uiPtr;
-        }
-        catch
-        {
-            // ignored
-        }
-        
-        _recomputeUIHook.Invoke(uiPtr, catId);
+        _catSelectScreenHook.Invoke(uiPtr, catId, arg3);
     }
     
     [UnmanagedCallersOnly]
@@ -188,7 +166,7 @@ public class RerollUI : IInjectable
                 if (_uiPtr != IntPtr.Zero)
                 {
                     MewTourLogger.Log($"Recomputing UI -> {_currentCatId}");
-                    _recomputeUIHook.Invoke(_uiPtr, _currentCatId);
+                    _catSelectScreenHook.Invoke(_uiPtr, _currentCatId, 0);
                 }
             }
         }
