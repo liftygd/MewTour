@@ -85,9 +85,7 @@ public class RerollUI : IInjectable
         if (_runManager.RunActive)
             return null;
         
-        if (_sceneManager.CurrentScene != SceneEnum.InventoryScreen2 ||
-            (_sceneManager.PreviousScene != SceneEnum.ClassSelection &&
-             _sceneManager.PreviousScene != SceneEnum.SaveSelection))
+        if (_sceneManager.CurrentScene != SceneEnum.InventoryScreen2)
             return null;
 
         var cats = _runManager.GetAdventureCats();
