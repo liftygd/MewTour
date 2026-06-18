@@ -32,6 +32,7 @@ public class UIManager : Manager
     {
         _sceneManager = loader.Get<SceneManager>();
         _sceneManager.OnSceneTransitioned += ClearUI;
+        _sceneManager.OnSceneChanged += SceneChanged;
         
         _runManager = loader.Get<RunManager>();
         _runManager.OnRunStarted += ClearUI;
@@ -49,6 +50,15 @@ public class UIManager : Manager
         MewUIManager.Instance.AddDrawable(drawable);
         _uiElements.Add(id, drawable);
         return drawable;
+    }
+
+    private void SceneChanged()
+    {
+        // Ugly hack to disable the ordering input block for reroll button for now
+        if (_sceneManager.CurrentScene == SceneEnum.InventoryScreen2)
+            MewUIManager.CurrentMaxOrderForInputBlock = -1;
+        else
+            MewUIManager.CurrentMaxOrderForInputBlock = 30;
     }
     
     public Drawable? AddElement(Drawable? element)

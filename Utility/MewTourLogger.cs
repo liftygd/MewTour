@@ -5,7 +5,7 @@ namespace MewTour.Utility;
 
 public class MewTourLogger
 {
-    private static bool Logging = true;
+    private static bool Logging = false;
     private static string LogFilePath => $"Logs/mewtour_logs/{DateTime.Now:yyyy-MM-dd}.log";
     
     public static void Log(string msg)
